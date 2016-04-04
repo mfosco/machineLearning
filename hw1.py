@@ -43,6 +43,10 @@ dt = pd.DataFrame(data)
 missingVals = len(data.index) - data.count()
 data.mode()
 
+z = data.hist(layout=(2,2))
+z[0][1].get_figure().savefig('hists.pdf')
+
+
 def getGender(name):
 	r = requests.get('https://api.genderize.io/?name=' + name)
 	s = r.text
@@ -108,8 +112,25 @@ def wayB(dat):
 
 	return df
 
- dat = pd.read_csv('genderAdded.csv')
+dfB = wayB(dfGender)
+dfB.to_csv("wayB.csv")
 
+'''
+Instead of just taking the means of the values (conditional or nonconditional)
+it should be better to interpolate what the values should be based
+on a prediction from our data where we do have full information.
+Thus, we can fit a linear model to predict what the value should be, using
+the data points with no missing values to inform our prediction.
+'''
+def wayC(dat):
+	df = dat
+	df['Age'] = df['Age'].fillna(df.Age.interpolate())
+	df['GPA'] = df['GPA'].fillna(df.GPA.interpolate())
+	df['Days_missed'] = df['Days_missed'].fillna(df.Days_missed.interpolate())	
+	return df	
+
+dfC = wayC(dfGender)
+dfC.to_csv("wayC.csv")
 
 
 
