@@ -141,14 +141,16 @@ def wayC(dat):
 
 	listy = ['Age', 'GPA', 'Days_missed']
 	for l in listy:
-		means = df.groupby(['Graduated', 'Gender'])[l].mean()
-		df = df.set_index(['Graduated', 'Gender'])
+		means = df.groupby(['Graduated', 'Gender', 'State'])[l].mean()
+		df = df.set_index(['Graduated', 'Gender', 'State'])
 		df[l] = df[l].fillna(means)
 		df = df.reset_index()
 	
 	return df	
 
-dfC = wayC(pd.read_csv("genderAdded.csv"))
+datF = pd.read_csv("genderAdded.csv")
+datF['State'] = datF['State'].fillna("none")
+dfC = wayC(datF)
 dfC.to_csv("wayC.csv")
 
 
