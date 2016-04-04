@@ -38,20 +38,16 @@ Please submit the Python code for each of these tasks as well as the new data fi
 
 # First part
 data = pd.read_csv("mock_student_data.csv")
-data.describe()
+print data.describe()
 print "Note the median is the 50%"
-dt = pd.DataFrame(data)
 missingVals = len(data.index) - data.count()
 print missingVals
 data['State'] = data['State'].fillna(data.State.interpolate())
-ageMode = data['Age'].mode()[0]
-gpaMode = data['GPA'].mode()[0]
-dmMode = data['Days_missed'].mode()[0]
 
-print 'Age mode: ' + str(ageMode)
-print 'GPA mode: ' + str(gpaMode)
-print 'Days_missed mode: ' + str(dmMode)
-#data.mode()
+for l in data.columns:
+	if l != 'ID':
+		modey = data[l].mode()[0]
+		print l + ' mode: ' + str(modey)
 
 z = data.hist(layout=(2,2))
 z[0][1].get_figure().savefig('hists.pdf')
