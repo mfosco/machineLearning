@@ -99,7 +99,7 @@ def wayA(dat):
 
 	return df
 
-dfA = wayA(dfGender)
+dfA = wayA(pd.read_csv("genderAdded.csv"))
 
 dfA.to_csv("wayA.csv")
 
@@ -127,10 +127,8 @@ dfB.to_csv("wayB.csv")
 
 '''
 Instead of just taking the means of the values (conditional or nonconditional)
-it should be better to interpolate what the values should be based
-on a prediction from our data where we do have full information.
-Thus, we can fit a linear model to predict what the value should be, using
-the data points with no missing values to inform our prediction.
+it should be better to condition on even more. So I condition on
+whether or not someone graduated, their gender, and their state.
 '''
 def wayC(dat):
 	df = dat
