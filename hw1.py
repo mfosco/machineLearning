@@ -42,15 +42,25 @@ print data.describe()
 print "Note the median is the 50%"
 missingVals = len(data.index) - data.count()
 print missingVals
-data['State'] = data['State'].fillna(data.State.interpolate())
 
 for l in data.columns:
 	if l != 'ID':
 		modey = data[l].mode()[0]
 		print l + ' mode: ' + str(modey)
 
+b =  data.State.value_counts().plot(kind = 'bar')
+b.get_figure().savefig('States.pdf')
+
+b =  data.Gender.value_counts().plot(kind = 'bar')
+b.get_figure().savefig('gender.pdf')
+
+b =  data.Graduated.value_counts().plot(kind = 'bar')
+b.get_figure().savefig('graduated.pdf')
+
 z = data.hist(layout=(2,2))
 z[0][1].get_figure().savefig('hists.pdf')
+
+
 
 
 def getGender(name):
@@ -131,8 +141,8 @@ def wayC(dat):
 
 	listy = ['Age', 'GPA', 'Days_missed']
 	for l in listy:
-		means = df.groupby(['Graduated', 'Gender', 'State'])[l].mean()
-		df = df.set_index(['Graduated', 'Gender', 'State'])
+		means = df.groupby(['Graduated', 'Gender'])[l].mean()
+		df = df.set_index(['Graduated', 'Gender'])
 		df[l] = df[l].fillna(means)
 		df = df.reset_index()
 	
