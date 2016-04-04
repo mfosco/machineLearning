@@ -4,6 +4,7 @@
 import numpy as np 
 import pandas as pd 
 import requests
+import statsmodels.api as sm
 
 '''
 Problem A
@@ -41,7 +42,16 @@ data.describe()
 print "Note the median is the 50%"
 dt = pd.DataFrame(data)
 missingVals = len(data.index) - data.count()
-data.mode()
+print missingVals
+data['State'] = data['State'].fillna(data.State.interpolate())
+ageMode = data['Age'].mode()[0]
+gpaMode = data['GPA'].mode()[0]
+dmMode = data['Days_missed'].mode()[0]
+
+print 'Age mode: ' + str(ageMode)
+print 'GPA mode: ' + str(gpaMode)
+print 'Days_missed mode: ' + str(dmMode)
+#data.mode()
 
 z = data.hist(layout=(2,2))
 z[0][1].get_figure().savefig('hists.pdf')
@@ -64,7 +74,7 @@ def addGenders(dat):
 	temp = data['Gender']
 
 	for i in df.index:
-		print str(i)
+		#print str(i)
 		if type(temp[i]) != str and np.isnan(temp[i]):
 			df.set_value(i, 'Gender', getGender(df.get_value(i, 'First_name')))
 	return df
@@ -112,7 +122,7 @@ def wayB(dat):
 
 	return df
 
-dfB = wayB(dfGender)
+dfB = wayB(pd.read_csv("genderAdded.csv"))
 dfB.to_csv("wayB.csv")
 
 '''
@@ -124,13 +134,20 @@ the data points with no missing values to inform our prediction.
 '''
 def wayC(dat):
 	df = dat
-	df['Age'] = df['Age'].fillna(df.Age.interpolate())
-	df['GPA'] = df['GPA'].fillna(df.GPA.interpolate())
-	df['Days_missed'] = df['Days_missed'].fillna(df.Days_missed.interpolate())	
+
+	listy = ['Age', 'GPA', 'Days_missed']
+	for l in listy:
+		means = df.groupby(['Graduated', 'Gender', 'State'])[l].mean()
+		df = df.set_index(['Graduated', 'Gender', 'State'])
+		df[l] = df[l].fillna(means)
+		df = df.reset_index()
+	
 	return df	
 
-dfC = wayC(dfGender)
+dfC = wayC(pd.read_csv("genderAdded.csv"))
 dfC.to_csv("wayC.csv")
+
+
 
 
 
