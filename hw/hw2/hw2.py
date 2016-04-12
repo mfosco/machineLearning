@@ -11,30 +11,41 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.cross_validation import train_test_split
 from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
-import os, timeit, sys
-import itertools
+import os, timeit, sys, itertools, re
 import seaborn as sns
 from sklearn import linear_model, neighbors, ensemble, svm
 
+##################################################################################
+'''
+List of models and parameters
+'''
 
 
+modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.1, .5, 1, 5, 10, 25],
+		  'class_weight': ['balanced', None], 'n_jobs' : [3],
+		  'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1]}
+modelLSVC = {'model': svm.LinearSVC, 'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 'class_weight': ['balanced', None],
+			 'max_iter': [500, 1000, 5000]}
+modelKNN = {'model': neighbors.NearestNeighbors, 'n_neighbors' : [2, 5, 10, 50, 100, 500], 'radius' : [.5, 1, 2, 10],
+			'leaf_size': [15, 30, 60, 120], 'n_jobs': [3]}
+
+
+
+modelList = [modelLR, modelLSVC, modelKNN]
+
+##################################################################################
+
+'''
+Read in the data functions
+'''
+
+'''
+converts from camel case to snake case
+Taken from:  http://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-camel-case
+'''
 def camel_to_snake(column_name):
-    '''
-    converts from camel case to snake case
-    Taken from:  http://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-camel-case
-    '''
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', column_name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-
-def read_data(filename):
-    """
-    Takes the name of a file to be read, returns a DataFrame object.
-    filename should be a string. 
-    """
-    assert(type(filename)==str and filename.endswith('.csv'))
-    data = pd.read_csv(filename,index_col=0)
-    data.columns = [camel_to_snake(col) for col in data.columns]
-    return data
 
 '''
 Read data from a csv
@@ -42,8 +53,13 @@ Read data from a csv
 def readcsv(filename):
 	assert(type(filename) == str and filename.endswith('.csv'))
 	data = pd.read_csv(filename, index_col = 0)
-	data.columns = [camel_to_snake(col) for col in data.columns]
+	#data.columns = [camel_to_snake(col) for col in data.columns]
 	return data
+
+###############################################################
+'''
+Descriptive functions
+'''
 
 '''
 Create a correlation table
@@ -74,7 +90,7 @@ def barPlots(df, items, saveExt = ''):
 		b = df[it].value_counts().plot(kind = 'bar', title = it)
 		s = saveExt + it + '.pdf'
 		b.get_figure().savefig(s)
-		plt.clf()
+		plt.show()
 
 '''
 Make pie plots.
@@ -84,22 +100,25 @@ def piePlots(df, items, saveExt = ''):
 		b = df[it].value_counts().plot(kind = 'pie', title = it)
 		s = saveExt + it + 'Bar.pdf'
 		b.get_figure().savefig(s)
-		plt.clf()
+		plt.show()
 
 '''
 Discretize a continous variable. 
 num: 		The number of buckets to split the cts variable into
 '''
-def discretize(df, col, num=10):
+def discretize(df, cols, num=10):
 	dDF = df
-	dDF[col] = pd.cut(dDF[col], num)
+	for col in cols:
+		dDF[col] = pd.cut(dDF[col], num)
 	return dDF
 
 '''
-Convert a categorical variable into binary variables
+Convert categorical variables into binary variables
 '''
-def categToBin(df, col):
-	dfN = pd.get_dummies(df[col])
+def categToBin(df, cols):
+	dfN = df
+	for col in cols:
+		dfN = pd.get_dummies(df[col])
 	df_n = pd.concat([df, dfN], axis=1)
 	return df_n
 
@@ -165,6 +184,7 @@ def histPlots(df, items, fname, binns = 20, saveExt = ''):
 			x += 1
 		fig.savefig(saveExt + fname + str(indx) + 'Hists.pdf')
 		plt.clf()	
+	return
 
 
 '''
@@ -174,45 +194,103 @@ def densityPlots(df, items, saveExt = ''):
 	for it in items:
 		b = df[it].value_counts().plot(kind = 'kde', title = it + ' Density Plot')
 		s = saveExt + it + 'DensityPlot.pdf'
-		b.get_figure().savefig(s)	
+		b.get_figure().savefig(s)
+		plt.show()	
+
+'''
+takes a response series and a matrix of features, and uses a random
+forest to rank the relative importance of the features for predicting
+the response.    
+Basically taken from the DataGotham2013 GitHub repo and scikit learn docs
+'''   
+def identify_important_features(X,y,save_toggle=False):
+    forest = ensemble.RandomForestClassifier()
+    forest.fit(X, y)
+    importances = forest.feature_importances_
+    std = np.std([tree.feature_importances_ for tree in forest.estimators_],
+                 axis=0)
+    sorted_indices = np.argsort(importances)[::-1]
+
+    padding = np.arange(len(X.columns)) + 0.5
+    plt.barh(padding, importances[sorted_indices],color='r', align='center',xerr=std[sorted_indices])
+    plt.yticks(padding, X.columns[sorted_indices])
+    plt.xlabel("Relative Importance")
+    plt.title("Variable Importance")
+    if save_toggle:
+        plt.savefig('RFimportant_features.png')
+    plt.show()
+    
+'''
+Plot x vs y for each x in X
+'''    
+def x_vs_y_plots(X,y,save_toggle=False):
+    df = pd.concat([X, pd.DataFrame(y, index=X.index)], axis=1)
+    for x in X.columns:
+        df[[x,y.name]].groupby(x).mean().plot()
+        if save_toggle:
+            plt.savefig(x+'_vs_'+y.name+'.png')
+        plt.show()
+    return
+
+#################################################################################
+'''
+Fill in Data functions:
+'''
 
 '''
 Fill in the mean for select items
 '''
-def fillNaMean(df, items = 'all'):
+def fillNaMean(df):
 	tdf = df
 
-	if items == 'all':
-		for col in tdf.columns:
-			tdf[col] = tdf[col].fillna(tdf[col].mean())
-		return tdf
+	numFields = tdf.select_dtypes([np.number])
+	catFields = tdf.select_dtypes(['object','category'])
 
-	for i in items:
-		tdf[i] = tdf[i].fillna(tdf[i].mean())
+	if len(catFields.columns) > 0:
+		for col in catFields.columns:
+			ind = pd.isnull(tdf[col])
+			fill_val = tdf[col].mode()[0]
+			tdf.ix[ind,col] = fill_val
+
+	if len(numFields.columns) > 0:
+		for col in numFields.columns:
+			ind = pd.isnull(tdf[col])
+			fill_val = tdf[col].median()
+			tdf.ix[ind,col] = fill_val
 	return tdf
 
 '''
 Fill in the conditional mean for select items
 '''
-def fillConditMean(df, conditions, items = 'all'):
+def fillConditMean(df, conditions):
 	if type(conditions) != list:
 		raise TypeError('Error in fillConditMean. Variable CONDITIONS was not of type list')
 
 	dat = df
-	if items == 'all':
-		for col in dat.columns:
+
+	numFields = dat.select_dtypes([np.number])
+	catFields = dat.select_dtypes(['object','category'])
+
+	if len(catFields.columns) > 0:
+		for col in catFields.columns:
+			means = dat.groupby(conditions)[col].mode()[0]
+			dat = dat.set_index(conditions)
+			dat[col] = dat[col].fillna(means)
+			dat = dat.reset_index()
+
+	if len(numFields.columns) > 0:
+		for col in numFields.columns:
 			means = dat.groupby(conditions)[col].mean()
 			dat = dat.set_index(conditions)
 			dat[col] = dat[col].fillna(means)
 			dat = dat.reset_index()
-		return dat
 
-	for col in items:
-		means = dat.groupby(conditions)[col].mean()
-		dat = dat.set_index(conditions)
-		dat[col] = dat[col].fillna(means)
-		dat = dat.reset_index()
 	return dat
+
+###############################################################
+'''
+Functions dealing with the actual pipeLine
+'''
 
 '''
 Remove a key from a dictionary
@@ -239,39 +317,22 @@ def wrapper(func, args):
 	return m
 
 '''
-Determine the best model from a dictionary of specific parameters
+Create dictionary from a sorted list of 
+keys and items.
 '''
-def bestModel(X,y, d):
-	dN = removeKey(d, 'model')
-	bestModel = None
-	bAccuracy = 0
-	for k in dN.keys():
-			wrap = wrapper(d['model'], dN[k])
-			temp = wrap.fit(X,y)
-			tAcc = temp.score(X,y)
-
-			if tAcc > bAccuracy:
-				bAccuracy = tAcc
-				bestModel = temp
-				print str(bAccuracy)
-	return bestModel, bAccuracy
-
-modelsLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.1, .5, 1, 5, 10, 25],
-		  'class_weight': ['balanced', 'auto', None],
-		  'tol' : [1e-5, 1e-4, 1e-3, 1e-1, 1]}
-
 def createDict(keys, items):
 	d = {}
-
 	for k in range(0, len(keys)):
 		d[keys[k]] = items[k]
 	return d 
 
-
+'''
+Make all the requisite mini dictionaries from
+the main dictionary.
+'''
 def makeDicts(d):
 	result = []
 	dN = removeKey(d, 'model')
-
 	thingy  = dN.keys()
 	l = [dN[x] for x in thingy]
 	combos = list(itertools.product(*l))
@@ -290,14 +351,18 @@ def makeModels(X,y, d):
 	result = makeDicts(d)
 
 	z = 0
+	total = len(result)
 	for item in result:
 			wrap = wrapper(d['model'], item)
 			temp = wrap.fit(X,y)
 			result[z] = temp
 			z +=1
-			print str(z)
+			print str(z) + ' out of ' + str(total)
 	return result
 
+'''
+Get a list of accuracies from a model list
+'''
 def getAccuracies(X, y, modelList):
 	result = [0]*len(modelList)
 
@@ -306,25 +371,35 @@ def getAccuracies(X, y, modelList):
 	return result
 
 '''
-Hopefully generic enough model to test a bunch of 
-classifiers and pick the best one (I feel this will need some
-	more work)
+Sort the list of models from best to worst
+according to a second list of accuracies
 '''
-def pipeLine(name, lModels, yName):
+def bestModels(modelList, accList, rev = True):
+	result = [x for (y,x) in sorted(zip(accList, modelList))]
+	if rev:
+		result.reverse()
+	return result
+
+'''
+Loop over a list of models and their parameters.
+From that list, calculate the accuracy of each model.
+Then based on that accuracy, get a list of the best models
+with the best model in the 0th position.
+'''
+def pipeLine(name, lModels, yName, criterion = getAccuracies, rev = True, fillMethod = fillNaMean):
 	data = readcsv(name)
-	df = fillNaMean(data)
-
+	df = fillMethod(data)
 	y,X = getXY(df, yName)
+	allModels = []
 
-	bModel = None
-	bAcc = 0
 	for l in lModels:
-		tMod, tAcc = bestModel(X,y, l)
-		if tMod != None and tAcc > bAcc:
-			bModel = tMod
-			bAcc = tAcc
-			print "Current best accuracy: " + str(bAcc)
-	return bModel
+		models = makeModels(X,y, l)
+		allModels += models
+
+	criteria = criterion(X,y, allModels)
+	result = bestModels(allModels, criteria, rev)
+
+	return result
 
 '''
 Fit a model given X and y
@@ -337,15 +412,6 @@ Calculate the accuracy of a model
 '''
 def accuracy(X,y, model):
 	return model.score(X,y)
-
-'''
-Fit a logistics regression model (semi useless after pipeLine)
-'''
-def fitting(y, X):
-	model = LogisticRegression()
-	mod = fitModel(X, y, model)
-
-	return mod
 
 '''
 Generate predictions from model given x
