@@ -20,14 +20,14 @@ from sklearn import linear_model, neighbors, ensemble, svm
 List of models and parameters
 '''
 
-
+cores = 4
 modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.1, .5, 1, 5, 10, 25],
-		  'class_weight': ['balanced', None], 'n_jobs' : [3],
+		  'class_weight': ['balanced', None], 'n_jobs' : [cores],
 		  'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1]}
 modelLSVC = {'model': svm.LinearSVC, 'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 'class_weight': ['balanced', None],
 			 'max_iter': [500, 1000, 5000]}
 modelKNN = {'model': neighbors.NearestNeighbors, 'n_neighbors' : [2, 5, 10, 50, 100, 500], 'radius' : [.5, 1, 2, 10],
-			'leaf_size': [15, 30, 60, 120], 'n_jobs': [3]}
+			'leaf_size': [15, 30, 60, 120], 'n_jobs': [cores]}
 
 
 
@@ -357,7 +357,7 @@ def makeModels(X,y, d):
 			temp = wrap.fit(X,y)
 			result[z] = temp
 			z +=1
-			print str(z) + ' out of ' + str(total)
+			print str(z) + '/' + str(total)
 	return result
 
 '''
