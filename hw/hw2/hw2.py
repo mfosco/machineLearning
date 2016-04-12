@@ -12,12 +12,38 @@ from sklearn.cross_validation import train_test_split
 from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
 import os, timeit, sys
+import itertools
+import seaborn as sns
+from sklearn import linear_model, neighbors, ensemble, svm
+
+
+
+def camel_to_snake(column_name):
+    '''
+    converts from camel case to snake case
+    Taken from:  http://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-camel-case
+    '''
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', column_name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+def read_data(filename):
+    """
+    Takes the name of a file to be read, returns a DataFrame object.
+    filename should be a string. 
+    """
+    assert(type(filename)==str and filename.endswith('.csv'))
+    data = pd.read_csv(filename,index_col=0)
+    data.columns = [camel_to_snake(col) for col in data.columns]
+    return data
 
 '''
 Read data from a csv
 '''
 def readcsv(filename):
-	return pd.read_csv(filename)
+	assert(type(filename) == str and filename.endswith('.csv'))
+	data = pd.read_csv(filename, index_col = 0)
+	data.columns = [camel_to_snake(col) for col in data.columns]
+	return data
 
 '''
 Create a correlation table
@@ -205,12 +231,11 @@ def getXY(df, yName):
 	return (y,X)
 
 '''
-This function will need some more work.
-It attempts to call the scikit learn classifier function with
+Calls the scikit learn classifier function with
 certain parameters.
 '''
-def wrapperLR(func, solver, fit_intercept = True):
-	m = func( solver = solver, fit_intercept = fit_intercept)
+def wrapper(func, args):
+	m = func(**args)
 	return m
 
 '''
@@ -221,7 +246,7 @@ def bestModel(X,y, d):
 	bestModel = None
 	bAccuracy = 0
 	for k in dN.keys():
-			wrap = wrapperLR(d['model'], **dN[k])
+			wrap = wrapper(d['model'], dN[k])
 			temp = wrap.fit(X,y)
 			tAcc = temp.score(X,y)
 
@@ -230,6 +255,55 @@ def bestModel(X,y, d):
 				bestModel = temp
 				print str(bAccuracy)
 	return bestModel, bAccuracy
+
+modelsLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.1, .5, 1, 5, 10, 25],
+		  'class_weight': ['balanced', 'auto', None],
+		  'tol' : [1e-5, 1e-4, 1e-3, 1e-1, 1]}
+
+def createDict(keys, items):
+	d = {}
+
+	for k in range(0, len(keys)):
+		d[keys[k]] = items[k]
+	return d 
+
+
+def makeDicts(d):
+	result = []
+	dN = removeKey(d, 'model')
+
+	thingy  = dN.keys()
+	l = [dN[x] for x in thingy]
+	combos = list(itertools.product(*l))
+	lengthy = len(combos)
+	result = [0] * lengthy
+
+	for i in range(0, lengthy):
+		result[i] = createDict(thingy, combos[i])
+
+	return result
+
+'''
+Determine the best model from a dictionary of specific parameters
+'''
+def makeModels(X,y, d):
+	result = makeDicts(d)
+
+	z = 0
+	for item in result:
+			wrap = wrapper(d['model'], item)
+			temp = wrap.fit(X,y)
+			result[z] = temp
+			z +=1
+			print str(z)
+	return result
+
+def getAccuracies(X, y, modelList):
+	result = [0]*len(modelList)
+
+	for i in range(0, len(modelList)):
+		result[i] = modelList[i].score(X,y)
+	return result
 
 '''
 Hopefully generic enough model to test a bunch of 
