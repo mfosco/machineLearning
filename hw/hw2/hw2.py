@@ -86,22 +86,60 @@ def makeHisty(ax, col, it, binns = 20):
 '''
 Make histogram plots, num is for layout of plot
 '''
-def histPlots(df, items, num, fname, binns = 20, saveExt = ''):
-	fig, axarr = plt.subplots(num, num)
-	x = 0
-	y = 0
+def histPlots(df, items, fname, binns = 20, saveExt = ''):
+	indx = 1
 
-	for it in items:
-		makeHisty(axarr[x,y], df[it], it, binns)
-		axarr[x,y].set_title(it)
-		y += 1
-		if y >= num:
+	num = len(items)
+	iters = num % 4
+	z = 0
+
+	for i in range(0, iters):
+		fig, axarr = plt.subplots(2, 2)
+		x = 0
+		y = 0
+
+		for it in items[z:z+4]:
+			makeHisty(axarr[x,y], df[it], it, binns)
+			axarr[x,y].set_title(it)
+			y += 1
+			if y >= len(axarr):
+				x += 1
+				y = 0
+			if x >= len(axarr):
+				break
+		fig.savefig(saveExt + fname + str(indx) + 'Hists.pdf')
+		plt.clf()
+		indx += 1
+		z += 4
+
+	leftover = num - z
+	leftIts = items[z:]
+
+	if leftover == 1:
+		fig, axarr = plt.subplots(1,1)
+		makeHisty(axarr[0], df[leftIts[0]], leftIts[0], binns)
+		axarr[0].set_title(leftIts[0])
+		fig.savefig(saveExt + fname + str(indx) + 'Hists.pdf')
+		plt.clf()
+	elif leftover == 2:
+		fig, axarr = plt.subplots(1,2)
+		x = 0
+		for it in leftIts:
+			makeHisty(axarr[x], df[it], it, binns)
+			axarr[x].set_title(it)
 			x += 1
-			y = 0
-		if x >= len(axarr):
-			break
-	fig.savefig(saveExt + fname + 'Hists.pdf')
-	plt.clf()
+		fig.savefig(saveExt + fname + str(indx) + 'Hists.pdf')
+		plt.clf()	
+	elif leftover == 3:
+		fig, axarr = plt.subplots(1,3)
+		x = 0
+		for it in leftIts:
+			makeHisty(axarr[x], df[it], it, binns)
+			axarr[x].set_title(it)
+			x += 1
+		fig.savefig(saveExt + fname + str(indx) + 'Hists.pdf')
+		plt.clf()	
+
 
 '''
 Generate a density plot for certain items
@@ -242,7 +280,7 @@ def getPredicts(model, x):
 	p = model.predict(x)
 	return p
 
-
+'''
 num1 = 100
 num2 = 200
 numCores = 4
@@ -258,6 +296,7 @@ print corrTable(data)
 bModel = pipeLine('training.csv', [models], 'SeriousDlqin2yrs')
 
 
+
 dTest = readcsv('test.csv')
 dTest = fillNaMean(dTest)
 
@@ -266,3 +305,4 @@ yTest, xTest = getXY(dTest, 'SeriousDlqin2yrs')
 preds = getPredicts(bModel, xTest)
 pDF = pd.DataFrame(preds)
 pDF.to_csv("predictions.csv")
+'''
