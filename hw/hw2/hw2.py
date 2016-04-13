@@ -25,13 +25,14 @@ modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.01, .1,
 		  'class_weight': ['balanced', None], 'n_jobs' : [cores],
 		  'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1]}
 modelLSVC = {'model': svm.LinearSVC, 'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 'class_weight': ['balanced', None],
-			 'max_iter': [500, 1000, 2000,], 'C' :[.01, .1, .5, 1, 5, 10, 25]}
+			 'max_iter': [1000, 2000,], 'C' :[.01, .1, .5, 1, 5, 10, 25]}
 modelKNN = {'model': neighbors.KNeighborsClassifier, 'weights': ['uniform', 'distance'], 'n_neighbors' : [2, 5, 10, 50, 100, 500, 1000],
 			'leaf_size': [15, 30, 60, 120], 'n_jobs': [cores]}
 
 
 
 modelList = [modelLR, modelLSVC, modelKNN]
+
 ##################################################################################
 
 '''
@@ -439,7 +440,7 @@ print descrTable(data)
 data = fillNaMean(data)
 print corrTable(data)
 
-bModel = pipeLine('training.csv', modelList, 'SeriousDlqin2yrs')
+bModel, accs = pipeLine('training.csv', modelList, 'SeriousDlqin2yrs')
 
 
 
