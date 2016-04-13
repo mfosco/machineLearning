@@ -21,12 +21,12 @@ List of models and parameters
 '''
 
 cores = 4
-modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.1, .5, 1, 5, 10, 25],
+modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.01, .1, .5, 1, 5, 10, 25],
 		  'class_weight': ['balanced', None], 'n_jobs' : [cores],
 		  'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1]}
 modelLSVC = {'model': svm.LinearSVC, 'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 'class_weight': ['balanced', None],
 			 'max_iter': [500, 1000, 5000]}
-modelKNN = {'model': neighbors.NearestNeighbors, 'n_neighbors' : [2, 5, 10, 50, 100, 500], 'radius' : [.5, 1, 2, 10],
+modelKNN = {'model': neighbors.KNeighborsClassifier, 'weights': ['uniform', 'distance'], 'n_neighbors' : [2, 5, 10, 50, 100, 500, 1000],
 			'leaf_size': [15, 30, 60, 120], 'n_jobs': [cores]}
 
 
@@ -341,6 +341,8 @@ def makeDicts(d):
 
 	for i in range(0, lengthy):
 		result[i] = createDict(thingy, combos[i])
+	
+	result.append({})
 
 	return result
 
@@ -391,10 +393,13 @@ def pipeLine(name, lModels, yName, criterion = getAccuracies, rev = True, fillMe
 	df = fillMethod(data)
 	y,X = getXY(df, yName)
 	allModels = []
+	indx = 1
 
 	for l in lModels:
+		print "Iter: " + str(indx)
 		models = makeModels(X,y, l)
 		allModels += models
+		indx += 1
 
 	criteria = criterion(X,y, allModels)
 	result = bestModels(allModels, criteria, rev)
