@@ -25,14 +25,13 @@ modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.01, .1,
 		  'class_weight': ['balanced', None], 'n_jobs' : [cores],
 		  'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1]}
 modelLSVC = {'model': svm.LinearSVC, 'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 'class_weight': ['balanced', None],
-			 'max_iter': [500, 1000, 5000]}
+			 'max_iter': [500, 1000, 2000,], 'C' :[.01, .1, .5, 1, 5, 10, 25]}
 modelKNN = {'model': neighbors.KNeighborsClassifier, 'weights': ['uniform', 'distance'], 'n_neighbors' : [2, 5, 10, 50, 100, 500, 1000],
 			'leaf_size': [15, 30, 60, 120], 'n_jobs': [cores]}
 
 
 
 modelList = [modelLR, modelLSVC, modelKNN]
-
 ##################################################################################
 
 '''
@@ -341,7 +340,7 @@ def makeDicts(d):
 
 	for i in range(0, lengthy):
 		result[i] = createDict(thingy, combos[i])
-	
+
 	result.append({})
 
 	return result
@@ -396,15 +395,17 @@ def pipeLine(name, lModels, yName, criterion = getAccuracies, rev = True, fillMe
 	indx = 1
 
 	for l in lModels:
-		print "Iter: " + str(indx)
+		print "\nIter: " + str(indx) + "\n"
 		models = makeModels(X,y, l)
 		allModels += models
 		indx += 1
+	print "\nFinished making models. Moving on to calculating given criterion\n"
 
 	criteria = criterion(X,y, allModels)
+	print "\nPutting models in desired order based on given criterion\n"
 	result = bestModels(allModels, criteria, rev)
 
-	return result
+	return (result, criteria)
 
 '''
 Fit a model given X and y
@@ -438,7 +439,7 @@ print descrTable(data)
 data = fillNaMean(data)
 print corrTable(data)
 
-bModel = pipeLine('training.csv', [models], 'SeriousDlqin2yrs')
+bModel = pipeLine('training.csv', modelList, 'SeriousDlqin2yrs')
 
 
 
