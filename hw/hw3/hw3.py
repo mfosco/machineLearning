@@ -3,21 +3,29 @@
 
 import numpy as np 
 import pandas as pd 
-import requests
+from scipy import optimize
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from patsy import dmatrices
 import multiprocessing as mp
 from multiprocessing import Process, Queue
-from sklearn.linear_model import LogisticRegression
 from sklearn.cross_validation import train_test_split
 from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
-import os, timeit, sys, itertools, re
+import os, timeit, sys, itertools, re, time, requests, random
 import seaborn as sns
 from sklearn import linear_model, neighbors, ensemble, svm, preprocessing
 from numba.decorators import jit, autojit
 from numba import double #(nopython = True, cache = True, nogil = True [to run concurrently])
+from sklearn import preprocessing, cross_validation, svm, metrics, tree, decomposition, svm
+from sklearn.ensemble import BaggingClassifier, RandomForestClassifier, ExtraTreesClassifier, GradientBoostingClassifier, AdaBoostClassifier
+from sklearn.linear_model import LogisticRegression, Perceptron, SGDClassifier, OrthogonalMatchingPursuit, RandomizedLogisticRegression
+from sklearn.neighbors.nearest_centroid import NearestCentroid
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.grid_search import ParameterGrid
+from sklearn.metrics import *
+from sklearn.preprocessing import StandardScaler
 
 
 '''
@@ -62,16 +70,31 @@ Note: model.predict( x) predicts from model using x
 List of models and parameters
 '''
 
-cores = 4
+cores = mp.cpu_count()-2
 modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.01, .1, .5, 1, 5, 10, 25],
 		  'class_weight': ['balanced', None], 'n_jobs' : [cores],
-		  'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1]}
+		  'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 'penalty': ['l1', 'l2']}
 modelLSVC = {'model': svm.LinearSVC, 'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 'class_weight': ['balanced', None],
 			 'max_iter': [1000, 2000], 'C' :[.01, .1, .5, 1, 5, 10, 25]}
-modelKNN = {'model': neighbors.KNeighborsClassifier, 'weights': ['uniform', 'distance'], 'n_neighbors' : [2, 5, 10, 50, 100, 500, 1000],
+modelKNN = {'model': neighbors.KNeighborsClassifier, 'weights': ['uniform', 'distance'], 'n_neighbors' : [2, 5, 10, 50, 100, 500, 1000, 10000],
 			'leaf_size': [15, 30, 60, 120], 'n_jobs': [cores]}
-
-
+modelRF  = {'model': RandomForestClassifier, 'n_estimators': [5, 10, 25, 50, 100, 200, 1000, 10000], 'criterion': ['gini', 'entropy'],
+			'max_features': ['sqrt', 'log2'], 'max_depth': [1, 5, 10, 20, 50, 100], 'min_samples_split': [2, 5, 10, 20, 50],
+			'bootstrap': [True, False], 'n_jobs':[cores]}
+modelET  = {'model': ExtraTreesClassifier, 'n_estimatores': [5, 10, 25, 50, 100, 200, 1000, 10000], 'criterion': ['gini', 'entropy'],
+			'max_features': ['sqrt', 'log2'], 'max_depth': [1, 5, 10, 20, 50, 100],
+			'bootstrap': [True, False], 'n_jobs':[cores]}
+#base classifier for adaboost is automatically a decision tree
+modelAB  = {'model': AdaBoostClassifier, 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators' [1, 10, 100, 200, 1000, 10000]}
+modelSVM = {'model': svm.SVC, 'C':[0.00001,0.0001,0.001,0.01,0.1,1,10], 'probability': [True], 'kernel': ['rbf', 'poly', 'sigmoid']}
+modelGB  = {'model': GradientBoostingClassifier, 'learning_rate': [0.001,0.01,0.05,0.1,0.5], 'n_estimators': [1,10,100, 200,1000,10000],
+ 			'max_depth': [1,3,5,10,20,50,100], 'subsample' : [0.1, .2, 0.5, 1.0]}
+#Naive Bayes below
+modelNB  = {'model': GaussianNB}
+modelDT  = {'model': DecisionTreeClassifier, 'criterion': ['gini', 'entropy'], 'max_depth': [1,5,10,20,50,100], 
+			'max_features': ['sqrt','log2'],'min_samples_split': [2,5,10, 20, 50]}
+modelSGD = {'model': SGDCClassifier, 'loss': ['modified_huber', 'perceptron'], 'penalty': ['l1', 'l2', 'elasticnet'], 
+			'n_jobs': [cores]}
 
 modelList = [modelLR, modelLSVC, modelKNN]
 #X_scaled = preprocessing.scale(X) gets scaled version of X
@@ -402,8 +425,12 @@ def makeModels(X,y, d):
 	total = len(result)
 	for item in result:
 			wrap = wrapper(d['model'], item)
-			temp = wrap.fit(X,y)
-			result[z] = temp
+			try:
+				temp = wrap.fit(X,y)
+				result[z] = temp
+			except:
+				print "Invalid params: " + str(item)
+				continue
 			z +=1
 			print str(z) + '/' + str(total)
 	return result
@@ -460,12 +487,6 @@ Calculate the accuracy of a model
 def accuracy(X,y, model):
 	return model.score(X,y)
 
-'''
-Generate predictions from model given x
-'''
-def getPredicts(model, x):
-	p = model.predict(x)
-	return p
 
 '''
 num1 = 100
