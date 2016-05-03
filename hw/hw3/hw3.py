@@ -12,7 +12,7 @@ from multiprocessing import Process, Queue
 from sklearn.cross_validation import train_test_split
 from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
-import os, timeit, sys, itertools, re, time, requests, random
+import os, timeit, sys, itertools, re, time, requests, random, functools, logging
 import seaborn as sns
 from sklearn import linear_model, neighbors, ensemble, svm, preprocessing
 from numba.decorators import jit, autojit
@@ -26,38 +26,11 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.grid_search import ParameterGrid
 from sklearn.metrics import *
 from sklearn.preprocessing import StandardScaler
-
-
-'''
-example multiprocess:
-def f(i, y, X, lamSims, tN, thetaN, epsHat):
-    return simulateOne(y, X, lamSims, tN, thetaN, epsHat)
-
-
-def boot(y, X, lamSims, num):
-	res = thetaHatN(X,y)
-	thetaN = res[0]
-	tN = abs(res[1])
-	dat = X[:,res[2]]
-	dat = sm.add_constant(dat, prepend = False)
-	t = sm.OLS(y, dat).fit()
-	epsHat = t.resid
-	simul = [0]*num
-
-	for j in xrange(num):
-		simul[j] = simulateOne(y, X, lamSims, tN, thetaN, epsHat)
-
-	return simul
-'''
+from time import time 
 
 '''
 Notes from hw2: get rid of special cases for plots
 just make one plot per param then decide how to arrange them in the report
-
-delete densityPlots
-probs split pipeline into further pieces like:
-fit model
-then get desire statistic for goodness of fit
 
 need to impute test set using train set statistics
 '''
@@ -70,7 +43,7 @@ Note: model.predict( x) predicts from model using x
 List of models and parameters
 '''
 
-cores = mp.cpu_count()-2
+cores = mp.cpu_count()-1
 modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.01, .1, .5, 1, 5, 10, 25],
 		  'class_weight': ['balanced', None], 'n_jobs' : [cores],
 		  'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 'penalty': ['l1', 'l2']}
@@ -85,19 +58,20 @@ modelET  = {'model': ExtraTreesClassifier, 'n_estimatores': [5, 10, 25, 50, 100,
 			'max_features': ['sqrt', 'log2'], 'max_depth': [1, 5, 10, 20, 50, 100],
 			'bootstrap': [True, False], 'n_jobs':[cores]}
 #base classifier for adaboost is automatically a decision tree
-modelAB  = {'model': AdaBoostClassifier, 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators' [1, 10, 100, 200, 1000, 10000]}
+modelAB  = {'model': AdaBoostClassifier, 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators': [1, 10, 100, 200, 1000, 10000]}
 modelSVM = {'model': svm.SVC, 'C':[0.00001,0.0001,0.001,0.01,0.1,1,10], 'probability': [True], 'kernel': ['rbf', 'poly', 'sigmoid']}
-modelGB  = {'model': GradientBoostingClassifier, 'learning_rate': [0.001,0.01,0.05,0.1,0.5], 'n_estimators': [1,10,100, 200,1000,10000],
+modelGB  = {'model': GradientBoostingClassifier, 'learning_rate': [0.001,0.01,0.05,0.1,0.5], 'n_estimators': [1,10,100], #200,1000,10000], these other numbers took way too long to calc
  			'max_depth': [1,3,5,10,20,50,100], 'subsample' : [0.1, .2, 0.5, 1.0]}
 #Naive Bayes below
 modelNB  = {'model': GaussianNB}
 modelDT  = {'model': DecisionTreeClassifier, 'criterion': ['gini', 'entropy'], 'max_depth': [1,5,10,20,50,100], 
 			'max_features': ['sqrt','log2'],'min_samples_split': [2,5,10, 20, 50]}
-modelSGD = {'model': SGDCClassifier, 'loss': ['modified_huber', 'perceptron'], 'penalty': ['l1', 'l2', 'elasticnet'], 
+modelSGD = {'model': SGDClassifier, 'loss': ['modified_huber', 'perceptron'], 'penalty': ['l1', 'l2', 'elasticnet'], 
 			'n_jobs': [cores]}
 
-modelList = [modelLR, modelLSVC, modelKNN]
-#X_scaled = preprocessing.scale(X) gets scaled version of X
+modelList = [modelLR, modelLSVC, modelKNN, modelRF, modelET, 
+			 modelAB, modelSVM, modelGB, modelNB, modelDT,
+			 modelSGD]
 
 ##################################################################################
 
@@ -191,8 +165,8 @@ def categToBin(df, cols):
 '''
 Helper function to make histograms
 '''
-def makeHisty(ax, col, it, binns = 20):
-	n, bins, patches = ax.hist(col, binns=20, histtype='bar', range=(min(col), max(col)))
+def makeHisty(ax, col, it, binny = 20):
+	n, bins, patches = ax.hist(col, binns=binny, histtype='bar', range=(min(col), max(col)))
 
 '''
 Make histogram plots, num is for layout of plot
@@ -252,17 +226,6 @@ def histPlots(df, items, fname, binns = 20, saveExt = ''):
 		plt.clf()	
 	return
 
-
-'''
-Generate a density plot for certain items
-'''
-def densityPlots(df, items, saveExt = ''):
-	for it in items:
-		b = df[it].value_counts().plot(kind = 'kde', title = it + ' Density Plot')
-		s = saveExt + it + 'DensityPlot.pdf'
-		b.get_figure().savefig(s)
-		plt.show()	
-
 '''
 takes a response series and a matrix of features, and uses a random
 forest to rank the relative importance of the features for predicting
@@ -302,6 +265,29 @@ def x_vs_y_plots(X,y,save_toggle=False):
 '''
 Fill in Data functions:
 '''
+
+def fillNaMedian(data):
+    """
+    fills in missing values using unconditional mode/median as appropriate
+    """
+    numeric_fields = data.select_dtypes([np.number])
+    categorical_fields = data.select_dtypes(['object','category'])
+    
+    if len(categorical_fields.columns) > 0:
+        for col in categorical_fields.columns:
+            ind = pd.isnull(data[col])
+            fill_val = data[col].mode()[0]
+            data.ix[ind,col] = fill_val
+        
+    if len(numeric_fields.columns) > 0:    
+        for col in numeric_fields.columns:
+            ind = pd.isnull(data[col])
+            fill_val = data[col].median()
+            data.ix[ind,col] = fill_val
+
+    return data
+            
+
 
 '''
 Fill in the mean for select items
@@ -359,7 +345,7 @@ Functions dealing with the actual pipeLine
 '''
 
 '''
-Remove a key from a dictionary
+Remove a key from a dictionary. Used in makeDicts.
 '''
 def removeKey(d, key):
     r = dict(d)
@@ -375,29 +361,17 @@ def getXY(df, yName):
 	return (y,X)
 
 '''
-Calls the scikit learn classifier function with
-certain parameters.
+Wrapper for function, func, with arguments,
+arg, coming in a dictionary.
 '''
 def wrapper(func, args):
 	m = func(**args)
 	return m
 
-'''
-Create dictionary from a sorted list of 
-keys and items.
-'''
-#def createDict(keys, items):
-#	return dict(zip(keys, items))
-	'''
-	d = {}
-	for k in range(0, len(keys)):
-		d[keys[k]] = items[k]
-	return d
-	''' 
 
 '''
 Make all the requisite mini dictionaries from
-the main dictionary.
+the main dictionary for pipeline process.
 '''
 def makeDicts(d):
 	result = []
@@ -411,28 +385,8 @@ def makeDicts(d):
 	for i in range(0, lengthy):
 		result[i] = dict(zip(thingy, combos[i]))#createDict(thingy, combos[i])
 
-	result.append({})
+	#result.append({})
 
-	return result
-
-'''
-Determine the best model from a dictionary of specific parameters
-'''
-def makeModels(X,y, d):
-	result = makeDicts(d)
-
-	z = 0
-	total = len(result)
-	for item in result:
-			wrap = wrapper(d['model'], item)
-			try:
-				temp = wrap.fit(X,y)
-				result[z] = temp
-			except:
-				print "Invalid params: " + str(item)
-				continue
-			z +=1
-			print str(z) + '/' + str(total)
 	return result
 
 '''
@@ -456,46 +410,185 @@ def bestModels(modelList, accList, rev = True):
 	return result
 
 '''
-Loop over a list of models and their parameters.
-From that list, calculate the accuracy of each model.
-Then based on that accuracy, get a list of the best models
-with the best model in the 0th position.
+Return a dictionary of a bunch of criteria. Namely, this returns a dictionary
+with precision and recall at .05, .1, .2, .25, .5, .75, AUC, time to train, and
+time to test.
 '''
-def pipeLine(name, lModels, yName, criterion = getAccuracies, rev = True, fillMethod = fillNaMean):
+def getCriterions(yTest, yPredProbs, train_time, test_time):
+	levels = ['Precision at .05', 'Precision at .10', 'Precision at .2', 'Precision at .25', 'Precision at .5', 'Precision at .75']
+	recalls = ['Recall at .05', 'Recall at .10', 'Recall at .20', 'Recall at .25', 'Recall at .5', 'Recall at .75']
+	amts= [.05, .1, .2, .25, .5, .75]
+	tots = len(amts)
+	res = {}
+	for x in xrange(0, tots):
+		thresh = amts[x]
+		prec = precision_at_k(yTest, yPredProbs, thresh)
+		rec = metrics.recall_score(yTest, predictionsAtThresh(yTest, yPredProbs, thresh))
+		res[levels[x]] = prec
+		res[recalls[x]] = rec
+		#I know there is an f1 sklearn function, but I believe this way is marginally faster
+		res['f1 at ' + str(thresh)] = 2*((prec*rec)/(prec+rec))
+
+	res['AUC'] = metrics.roc_auc_score(yTest, yPredProbs)
+	res['train_time (sec)'] = train_time
+	res['test_time (sec)'] = test_time
+	return res
+
+'''
+Wrapper type function for own parallelization.
+This will get prediction probabilities as well as the results
+of a host of criteria described in getCriterions.
+'''
+def paralleled(item, XTrain, XTest, yTrain, yTest, modelType):
+	logging.info(str(item))
+	try:
+		start = time()
+		wrapped = wrapper(modelType, item)
+		preds = wrapped.fit(XTrain, yTrain)
+		t_time = time() - start
+		start_test = time()
+		predProb = preds.predict_proba(XTest)[:,1]
+		test_time = time() - start_test
+		criteria = getCriterions(yTest, predProb, t_time, test_time)
+	except:
+		logging.info('Error with: ' + str(item))
+		return (None, None)
+		
+	return (wrapped, criteria)
+
+'''
+Same function as makeModels (below), but uses own parallelization.
+This was written for the cases where sklearn did not have an 
+n_jobs option and was not automatically parallelized. This will write 
+the status of the parallelization to the file: status.log. 
+'''
+def makeModelsPara(XTrain, XTest,yTrain, yTest, d):
+	global cores
+	result = makeDicts(d)
+
+	logging.basicConfig(filename='status.log',level=logging.DEBUG)
+	logging.info('Started: ' + str(d['model']) + "\n")
+	pool = mp.Pool(cores)
+	res = pool.map(functools.partial(paralleled, XTrain = XTrain, XTest = XTest, yTrain = yTrain, yTest = yTest, modelType = d['model']), result)
+	pool.close()
+	pool.join()
+	logging.info('Ended: ' + str(d['model']) + "\n")
+
+	return res
+
+'''
+Fit a model and determine the results of a bunch of
+criteria, namely precision at various levels and AUC.
+'''
+def makeModels(XTrain, XTest,yTrain, yTest, d):
+	result = makeDicts(d)
+	total = len(result)
+	criterions = [None]*total
+
+	z = 0
+	for item in result:
+			wrap = wrapper(d['model'], item)
+			try:
+				start = time()
+				preds = wrap.fit(XTrain, yTrain)
+				t_time = time() - start
+				start_test = time()
+				yPredProbs = preds.predict_proba(XTest)[:,1]
+				test_time = time() - start_test
+				criterions[z] = getCriterions(yTest, yPredProbs, t_time, test_time)
+				result[z] = (wrap, yPredProbs)
+			except:
+				print "Invalid params: " + str(item)
+				result[z] = None
+				continue
+			z +=1
+			print str(z) + '/' + str(total)
+	return (result, criterions)
+
+'''
+General pipeline for ML process. This reads data from a file and generates a 
+training and testing set from it. It then fits a model and gets the models precision
+at .05, .1, .2, .25, .5, .75, and AUC. It returns a list of models fit as well as 
+those model's results for each criterion.
+'''
+def pipeLine(name, lModels, yName, fillMethod = fillNaMean):
 	data = readcsv(name)
 	df = fillMethod(data)
 	y,X = getXY(df, yName)
-	allModels = []
+	res = []
 	indx = 1
+	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 	for l in lModels:
 		print "\nIter: " + str(indx) + "\n"
-		models = makeModels(X,y, l)
-		allModels += models
-		indx += 1
-	print "\nFinished making models. Moving on to calculating given criterion\n"
+		#own parallelization if sklearn does not already do that
+		if 'n_jobs' not in l and "<class 'sklearn.neighbors.classification.KNeighborsClassifier'>" not in l.values():
+			models = makeModelsPara(X_train, X_test, y_train, y_test, l)
+			res += models
+			#normalize data in case of KNN
+		elif "<class 'sklearn.neighbors.classification.KNeighborsClassifier'>" in l.values():
+			nXTrain = preprocessing.scale(X_train)
+			nXTest = preprocessing.scale(X_test)
+			models = makeModels(nXTrain, nXTest, y_train, y_test, l)
+			res += models 
+		else:
+			models = makeModels(X_train, X_test, y_train, y_test, l)
+			res += models 
 
-	criteria = criterion(X,y, allModels)
-	print "\nPutting models in desired order based on given criterion\n"
-	result = bestModels(allModels, criteria, rev)
+		indx +=1
 
-	return (result, criteria)
+	return res
 
 '''
-Calculate the accuracy of a model
+Plot precision recall curve given model, true y, and
+predicted y probabilities.
 '''
-def accuracy(X,y, model):
-	return model.score(X,y)
+def plot_precision_recall_n(y_true, y_prob, model_name):
+    from sklearn.metrics import precision_recall_curve
+    y_score = y_prob
+    precision_curve, recall_curve, pr_thresholds = precision_recall_curve(y_true, y_score)
+    precision_curve = precision_curve[:-1]
+    recall_curve = recall_curve[:-1]
+    pct_above_per_thresh = []
+    number_scored = len(y_score)
+    for value in pr_thresholds:
+        num_above_thresh = len(y_score[y_score>=value])
+        pct_above_thresh = num_above_thresh / float(number_scored)
+        pct_above_per_thresh.append(pct_above_thresh)
+    pct_above_per_thresh = np.array(pct_above_per_thresh)
+    plt.clf()
+    fig, ax1 = plt.subplots()
+    ax1.plot(pct_above_per_thresh, precision_curve, 'b')
+    ax1.set_xlabel('percent of population')
+    ax1.set_ylabel('precision', color='b')
+    ax2 = ax1.twinx()
+    ax2.plot(pct_above_per_thresh, recall_curve, 'r')
+    ax2.set_ylabel('recall', color='r')
+    
+    name = model_name
+    plt.title(name)
+    #plt.savefig(name)
+    plt.show()
+
+'''
+Get predictions at threshold
+'''
+def predictionsAtThresh(y_true, y_scores, k):
+	threshold = np.sort(y_scores)[::-1][int(k*len(y_scores))]
+	y_pred = np.asarray([1 if i >= threshold else 0 for i in y_scores])
+	return y_pred
 
 
 '''
-num1 = 100
-num2 = 200
-numCores = 4
-models = {'model': LogisticRegression, '0': {'solver': 'newton-cg'},
-		  '2': {'solver': 'lbfgs'},
-		  '4': {'solver' :'sag'}, '6': {'solver': 'liblinear'}}
+Precision at certain cutoff value 
+'''
+def precision_at_k(y_true, y_scores, k):
+    threshold = np.sort(y_scores)[::-1][int(k*len(y_scores))]
+    y_pred = np.asarray([1 if i >= threshold else 0 for i in y_scores])
+    return metrics.precision_score(y_true, y_pred)
 
+
+'''
 data = readcsv('training.csv')
 print descrTable(data)
 data = fillNaMean(data)
