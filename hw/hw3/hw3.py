@@ -12,7 +12,7 @@ from multiprocessing import Process, Queue
 from sklearn.cross_validation import train_test_split
 from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
-import os, timeit, sys, itertools, re, time, requests, random, functools, logging
+import os, timeit, sys, itertools, re, time, requests, random, functools, logging, csv
 import seaborn as sns
 from sklearn import linear_model, neighbors, ensemble, svm, preprocessing
 from numba.decorators import jit, autojit
@@ -43,6 +43,8 @@ Note: model.predict( x) predicts from model using x
 List of models and parameters
 '''
 
+n_estimMatrix = [5, 10, 25, 50, 100, 200, 1000]#, 10000] 10000 was taking too long on AdaBoost
+
 cores = mp.cpu_count()-1
 modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.01, .1, .5, 1, 5, 10, 25],
 		  'class_weight': ['balanced', None], 'n_jobs' : [cores],
@@ -51,15 +53,17 @@ modelLSVC = {'model': svm.LinearSVC, 'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 
 			 'max_iter': [1000, 2000], 'C' :[.01, .1, .5, 1, 5, 10, 25]}
 modelKNN = {'model': neighbors.KNeighborsClassifier, 'weights': ['uniform', 'distance'], 'n_neighbors' : [2, 5, 10, 50, 100, 500, 1000, 10000],
 			'leaf_size': [15, 30, 60, 120], 'n_jobs': [cores]}
-modelRF  = {'model': RandomForestClassifier, 'n_estimators': [5, 10, 25, 50, 100, 200, 1000, 10000], 'criterion': ['gini', 'entropy'],
+modelRF  = {'model': RandomForestClassifier, 'n_estimators': n_estimMatrix, 'criterion': ['gini', 'entropy'],
 			'max_features': ['sqrt', 'log2'], 'max_depth': [1, 5, 10, 20, 50, 100], 'min_samples_split': [2, 5, 10, 20, 50],
 			'bootstrap': [True, False], 'n_jobs':[cores]}
-modelET  = {'model': ExtraTreesClassifier, 'n_estimatores': [5, 10, 25, 50, 100, 200, 1000, 10000], 'criterion': ['gini', 'entropy'],
+modelET  = {'model': ExtraTreesClassifier, 'n_estimatores': n_estimMatrix, 'criterion': ['gini', 'entropy'],
 			'max_features': ['sqrt', 'log2'], 'max_depth': [1, 5, 10, 20, 50, 100],
 			'bootstrap': [True, False], 'n_jobs':[cores]}
 #base classifier for adaboost is automatically a decision tree
-modelAB  = {'model': AdaBoostClassifier, 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators': [1, 10, 100, 200, 1000, 10000]}
+modelAB  = {'model': AdaBoostClassifier, 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators': n_estimMatrix}
 modelSVM = {'model': svm.SVC, 'C':[0.00001,0.0001,0.001,0.01,0.1,1,10], 'probability': [True], 'kernel': ['rbf', 'poly', 'sigmoid']}
+
+# will have to change n_estimators when running this on the project data
 modelGB  = {'model': GradientBoostingClassifier, 'learning_rate': [0.001,0.01,0.05,0.1,0.5], 'n_estimators': [1,10,100], #200,1000,10000], these other numbers took way too long to calc
  			'max_depth': [1,3,5,10,20,50,100], 'subsample' : [0.1, .2, 0.5, 1.0]}
 #Naive Bayes below
@@ -383,9 +387,7 @@ def makeDicts(d):
 	result = [0] * lengthy
 
 	for i in range(0, lengthy):
-		result[i] = dict(zip(thingy, combos[i]))#createDict(thingy, combos[i])
-
-	#result.append({})
+		result[i] = dict(zip(thingy, combos[i]))
 
 	return result
 
@@ -410,28 +412,55 @@ def bestModels(modelList, accList, rev = True):
 	return result
 
 '''
+Return a result string as "mean (std)"
+'''
+def makeResultString(mean, std):
+	return str(mean) + ' (' + str(std) + ')' 
+
+'''
 Return a dictionary of a bunch of criteria. Namely, this returns a dictionary
 with precision and recall at .05, .1, .2, .25, .5, .75, AUC, time to train, and
 time to test.
 '''
-def getCriterions(yTest, yPredProbs, train_time, test_time):
-	levels = ['Precision at .05', 'Precision at .10', 'Precision at .2', 'Precision at .25', 'Precision at .5', 'Precision at .75']
-	recalls = ['Recall at .05', 'Recall at .10', 'Recall at .20', 'Recall at .25', 'Recall at .5', 'Recall at .75']
-	amts= [.05, .1, .2, .25, .5, .75]
+#def getCriterions(yTest, yPredProbs, train_time, test_time, called):
+def getCriterions(yTests, predProbs, train_times, test_times, called):
+	levels = ['Precision at .05', 'Precision at .10', 'Precision at .2', 'Precision at .25', 'Precision at .5', 'Precision at .75', 'Precision at .85']
+	recalls = ['Recall at .05', 'Recall at .10', 'Recall at .20', 'Recall at .25', 'Recall at .5', 'Recall at .75', 'Recall at .85']
+	amts= [.05, .1, .2, .25, .5, .75, .85]
 	tots = len(amts)
 	res = {}
+	critsLen = len(yTests)
+	critsRange = range(0, critsLen)
+	res['Function called'] = called
 	for x in xrange(0, tots):
 		thresh = amts[x]
-		prec = precision_at_k(yTest, yPredProbs, thresh)
-		rec = metrics.recall_score(yTest, predictionsAtThresh(yTest, yPredProbs, thresh))
-		res[levels[x]] = prec
-		res[recalls[x]] = rec
-		#I know there is an f1 sklearn function, but I believe this way is marginally faster
-		res['f1 at ' + str(thresh)] = 2*((prec*rec)/(prec+rec))
+		prec = [precision_at_k(yTests[j], predProbs[j], thresh)  for j in critsRange]
+		rec = [metrics.recall_score(yTests[j], predictionsAtThresh(yTests[j], predProbs[j], thresh)) for j in critsRange]
+		precStd = np.std(prec)
+		recStd = np.std(rec)
 
-	res['AUC'] = metrics.roc_auc_score(yTest, yPredProbs)
-	res['train_time (sec)'] = train_time
-	res['test_time (sec)'] = test_time
+		f1S = [2*(prec[j]*rec[j])/(prec[j]+rec[j]) for j in critsRange]
+		f1Std = np.std(f1S)
+
+		precM = np.mean(prec)
+		recM = np.mean(rec)
+		f1M = np.mean(f1S)
+		res[levels[x]] = makeResultString(precM, precStd)
+		res[recalls[x]] = makeResultString(recM, recStd)
+		res['f1 at ' + str(thresh)] = makeResultString(f1M, f1Std)
+
+	auc = [metrics.roc_auc_score(yTests[j], predProbs[j]) for j in critsRange]
+	aucStd = np.std(auc)
+	aucM = np.mean(auc)
+	trainM = np.mean(train_times)
+	trainStd = np.std(train_times)
+	testM = np.mean(test_times)
+	testStd = np.std(test_times)
+
+	res['AUC'] = makeResultString(aucM, aucStd)
+	res['train_time (sec)'] = makeResultString(trainM, trainStd)
+	res['test_time (sec)'] = makeResultString(testM, testStd)
+
 	return res
 
 '''
@@ -439,22 +468,40 @@ Wrapper type function for own parallelization.
 This will get prediction probabilities as well as the results
 of a host of criteria described in getCriterions.
 '''
-def paralleled(item, XTrain, XTest, yTrain, yTest, modelType):
-	logging.info(str(item))
+def paralleled(item, X, y, k, modelType):#XTrain, XTest, yTrain, yTest, modelType):
+	s = str(item)
+	logging.info('Started: ' + s)
 	try:
-		start = time()
-		wrapped = wrapper(modelType, item)
-		preds = wrapped.fit(XTrain, yTrain)
-		t_time = time() - start
-		start_test = time()
-		predProb = preds.predict_proba(XTest)[:,1]
-		test_time = time() - start_test
-		criteria = getCriterions(yTest, predProb, t_time, test_time)
+		trainTimes = [None]*k
+		predProbs = [None]*k
+		testTimes = [None]*k
+		yTests = [None]*k
+
+		kf = cross_validation.KFold(len(y), k)
+		indx = 0
+		for train, test in kf:
+			XTrain, XTest = X._slice(train, 0), X._slice(test, 0)
+			yTrain, yTest = y._slice(train, 0), y._slice(test, 0)
+			yTests[indx] = yTest
+
+			start = time()
+			wrapped = wrapper(modelType, item)
+			fitting = wrapped.fit(XTrain, yTrain)
+			t_time = time() - start
+			trainTimes[indx] = t_time
+			start_test = time()
+			predProb = fitting.predict_proba(XTest)[:,1]
+			test_time = time() - start_test
+			testTimes[indx] = test_time
+			predProbs[indx] = predProb
+			indx +=1
+
+		criteria = getCriterions(yTests, predProbs, trainTimes, testTimes, str(wrapped))
+		#criteria = getCriterions(yTest, predProb, t_time, test_time, str(wrapped))
 	except:
-		logging.info('Error with: ' + str(item))
-		return (None, None)
-		
-	return (wrapped, criteria)
+		logging.info('Error with: ' + s)
+		return None#(None, None)
+	return criteria#(fitting, criteria)
 
 '''
 Same function as makeModels (below), but uses own parallelization.
@@ -462,17 +509,17 @@ This was written for the cases where sklearn did not have an
 n_jobs option and was not automatically parallelized. This will write 
 the status of the parallelization to the file: status.log. 
 '''
-def makeModelsPara(XTrain, XTest,yTrain, yTest, d):
+def makeModelsPara(X, y, k, d):#(XTrain, XTest,yTrain, yTest, d):
 	global cores
 	result = makeDicts(d)
 
-	logging.basicConfig(filename='status.log',level=logging.DEBUG)
-	logging.info('Started: ' + str(d['model']) + "\n")
+	logging.info('\nStarted: ' + str(d['model']) + "\n")
 	pool = mp.Pool(cores)
-	res = pool.map(functools.partial(paralleled, XTrain = XTrain, XTest = XTest, yTrain = yTrain, yTest = yTest, modelType = d['model']), result)
+	#changed Below
+	res = pool.map(functools.partial(paralleled, X = X, y = y, k = k, modelType = d['model']), result)#XTrain = XTrain, XTest = XTest, yTrain = yTrain, yTest = yTest, modelType = d['model']), result)
 	pool.close()
 	pool.join()
-	logging.info('Ended: ' + str(d['model']) + "\n")
+	logging.info('\nEnded: ' + str(d['model']) + "\n")
 
 	return res
 
@@ -480,30 +527,121 @@ def makeModelsPara(XTrain, XTest,yTrain, yTest, d):
 Fit a model and determine the results of a bunch of
 criteria, namely precision at various levels and AUC.
 '''
-def makeModels(XTrain, XTest,yTrain, yTest, d):
+def makeModels(X, y, k, d):#XTrain, XTest,yTrain, yTest, d):
 	result = makeDicts(d)
 	total = len(result)
-	criterions = [None]*total
+	#criterions = [None]*total
+	res = [None]*total
 
 	z = 0
+	kf = cross_validation.KFold(len(y), k)
+	logging.info("\nStarting: " + str(d['model']) + '\n')
 	for item in result:
 			wrap = wrapper(d['model'], item)
 			try:
+				trainTimes = [None]*k
+				predProbs = [None]*k
+				testTimes = [None]*k
+				yTests = [None]*k
+
+				
+				indx = 0
+				for train, test in kf:
+					XTrain, XTest = X._slice(train, 0), X._slice(test, 0)
+					yTrain, yTest = y._slice(train, 0), y._slice(test, 0)
+					yTests[indx] = yTest
+
+					start = time()
+					fitting = wrap.fit(XTrain, yTrain)
+					t_time = time() - start
+					trainTimes[indx] = t_time
+					start_test = time()
+					predProb = fitting.predict_proba(XTest)[:,1]
+					test_time = time() - start_test
+					testTimes[indx] = test_time
+					predProbs[indx] = predProb
+					indx += 1
+
+				criteria = getCriterions(yTests, predProbs, trainTimes, testTimes, str(wrap))
+
+				res[z] = criteria 
+				####################################
+				'''
 				start = time()
-				preds = wrap.fit(XTrain, yTrain)
+				fitted = wrap.fit(XTrain, yTrain)
 				t_time = time() - start
 				start_test = time()
-				yPredProbs = preds.predict_proba(XTest)[:,1]
+				yPredProbs = fitted.predict_proba(XTest)[:,1]
 				test_time = time() - start_test
-				criterions[z] = getCriterions(yTest, yPredProbs, t_time, test_time)
-				result[z] = (wrap, yPredProbs)
+				criterion = getCriterions(yTest, yPredProbs, t_time, test_time, str(wrap))
+				res[z] = (fitted, criterion)'''
 			except:
 				print "Invalid params: " + str(item)
-				result[z] = None
 				continue
 			z +=1
-			print str(z) + '/' + str(total)
-	return (result, criterions)
+			s= str(z) + '/' + str(total)
+			logging.info(s)
+			print s
+	logging.info("\nEnded: " + str(d['model']) + '\n')
+	return res
+
+'''
+Retrieve criteria from results of pipeline.
+No longer needed after adding k-fold cross val
+def retrieveCriteria(results):
+	fin = [x[1] for x in results if x[1] != None]
+	return fin
+'''
+
+'''
+Format the data to be in nice lists in the same 
+order as the masterHeader.
+'''
+def formatData(masterHeader, d):
+	length = len(d)
+	format = [[]] * length
+	lenMH = len(masterHeader)
+
+	indxForm = 0
+	indx = 0
+	for x in d:
+		tmp = [None] * lenMH
+		for j in masterHeader:
+			tmp[indx] = x[j]
+			indx += 1
+		indx = 0
+		format[indxForm] = tmp
+		indxForm += 1
+	return format
+
+
+'''
+Write results of pipeline to file. Note, d is the 
+variable that is returned by the pipeLine function call 
+'''
+def writeResultsToFile(fName, d):
+	header = None
+	spot = 0
+	limit = len(d)
+	while(header == None and spot < limit):
+		if d[spot] != None:
+			header = [x for x in d[spot].keys()]
+
+	if header == None:
+		raise Exception('Unable to grab appropriate header. Please check pipeLine')
+
+	header.sort()
+	fin = formatData(header, d)
+	fin.insert(0, header)
+	try:
+		with open(fName, "w") as fout:
+			writer = csv.writer(fout)
+			for f in fin:
+				writer.writerow(f)
+			fout.close()
+
+	except:
+		return -1
 
 '''
 General pipeline for ML process. This reads data from a file and generates a 
@@ -511,28 +649,28 @@ training and testing set from it. It then fits a model and gets the models preci
 at .05, .1, .2, .25, .5, .75, and AUC. It returns a list of models fit as well as 
 those model's results for each criterion.
 '''
-def pipeLine(name, lModels, yName, fillMethod = fillNaMean):
+def pipeLine(name, lModels, yName, k, fillMethod = fillNaMean):
 	data = readcsv(name)
 	df = fillMethod(data)
 	y,X = getXY(df, yName)
 	res = []
 	indx = 1
-	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+	logging.basicConfig(filename='status.log',level=logging.DEBUG)
+	#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 	for l in lModels:
 		print "\nIter: " + str(indx) + "\n"
 		#own parallelization if sklearn does not already do that
 		if 'n_jobs' not in l and "<class 'sklearn.neighbors.classification.KNeighborsClassifier'>" not in l.values():
-			models = makeModelsPara(X_train, X_test, y_train, y_test, l)
+			models = makeModelsPara(X, y, k, l)#makeModelsPara(X_train, X_test, y_train, y_test, l)
 			res += models
 			#normalize data in case of KNN
 		elif "<class 'sklearn.neighbors.classification.KNeighborsClassifier'>" in l.values():
-			nXTrain = preprocessing.scale(X_train)
-			nXTest = preprocessing.scale(X_test)
-			models = makeModels(nXTrain, nXTest, y_train, y_test, l)
+			Xtmp  = preprocessing.scale(X)
+			models = makeModels(Xtmp, y, k, l)
 			res += models 
 		else:
-			models = makeModels(X_train, X_test, y_train, y_test, l)
+			models = makeModels(X, y, k, l)
 			res += models 
 
 		indx +=1
@@ -587,6 +725,16 @@ def precision_at_k(y_true, y_scores, k):
     y_pred = np.asarray([1 if i >= threshold else 0 for i in y_scores])
     return metrics.precision_score(y_true, y_pred)
 
+
+
+'''
+name = 'training.csv'
+k = 5
+yName = 'SeriousDlqin2yrs'
+thingsToWrite = pipeLine(name, modelList, yName, k, fillNaMedian)
+fillMethod = fillNaMedian
+lModels = modelList
+'''
 
 '''
 data = readcsv('training.csv')
