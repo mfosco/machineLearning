@@ -1,5 +1,5 @@
 # Michael Fosco, mfosco
-# 4/12/16
+# 5/6/16
 
 import numpy as np 
 import pandas as pd 
@@ -39,48 +39,49 @@ criteriaHeader = ['AUC', 'Accuracy', 'Function called', 'Precision at .05',
  				  'Precision at .10', 'Precision at .2', 'Precision at .25', 'Precision at .5',
  				  'Precision at .75','Precision at .85','Recall at .05','Recall at .10',
  				  'Recall at .20','Recall at .25','Recall at .5','Recall at .75',
- 				  'Recall at .85','f1 at .05','f1 at .10','f1 at .20','f1 at .25',
- 				  'f1 at .5','f1 at .75','f1 at .85','test_time (sec)','train_time (sec)']
+ 				  'Recall at .85','f1 at 0.05','f1 at 0.1','f1 at 0.2','f1 at 0.25',
+ 				  'f1 at 0.5','f1 at 0.75','f1 at 0.85','test_time (sec)','train_time (sec)']
 
-modelnames = ['LogisticRegression', 'KNeighborsClassifier', 'RandomForestClassifier', 'ExtraTreesClassifier',
-			  'AdaBoostClassifier', 'svm.SVC', 'GradientBoostingClassifier', 'GaussianNB', 'DecisionTreeClassifier',
+modelNames = ['LogisticRegression', 'KNeighborsClassifier', 'RandomForestClassifier', 'ExtraTreesClassifier',
+			  'AdaBoostClassifier', 'SVC', 'GradientBoostingClassifier', 'GaussianNB', 'DecisionTreeClassifier',
 			  'SGDClassifier']
-n_estimMatrix = [5, 10, 25, 50, 100, 200, 1000]#, 10000] 10000 was taking too long on AdaBoost
-depth = [1, 5, 10, 20, 50]#, 100]
+n_estimMatrix = [5, 10, 25, 50, 100, 200, 1000, 10000]
+depth = [1, 5, 10, 20, 50 100]
 cpus = mp.cpu_count()
 cores = cpus-1
 modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.01, .1, .5, 1],#, 5, 10, 25],
 		  'class_weight': ['balanced', None], 'n_jobs' : [cores],
-		  'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 'penalty': ['l1', 'l2']}
+		  'tol' : [1e-5, 1e-3, 1], 'penalty': ['l1', 'l2']} #tol also had 1e-7, 1e-4, 1e-1
 #took out linear svc because it did not have predict_proba function
 #modelLSVC = {'model': svm.LinearSVC, 'tol' : [1e-7, 1e-5, 1e-4, 1e-3, 1e-1, 1], 'class_weight': ['balanced', None],
 #			 'max_iter': [1000, 2000], 'C' :[.01, .1, .5, 1, 5, 10, 25]}
-modelKNN = {'model': neighbors.KNeighborsClassifier, 'weights': ['uniform', 'distance'], 'n_neighbors' : [10, 50, 100, 500, 1000],#2,5 10000],
-			'leaf_size': [15, 30, 60, 120], 'n_jobs': [cpus/4]}
+modelKNN = {'model': neighbors.KNeighborsClassifier, 'weights': ['uniform', 'distance'], 'n_neighbors' : [100, 500, 1000],#2,5, 10, 50, 10000],
+			'leaf_size': [60, 120], 'n_jobs': [cpus/4]} #leaf size also had 15, 30
 modelRF  = {'model': RandomForestClassifier, 'n_estimators': [25, 50, 100], 'criterion': ['gini', 'entropy'],
-			'max_features': ['sqrt', 'log2'], 'max_depth': depth, 'min_samples_split': [2, 5, 10, 20, 50],
-			'bootstrap': [True, False], 'n_jobs':[cores]}
+			'max_features': ['sqrt', 'log2'], 'max_depth': depth, 'min_samples_split': [20, 50], #min sample split also had 2, 5, 10
+			'bootstrap': [True], 'n_jobs':[cores]} #bootstrap also had False
 #have to redo just the one below
 modelET  = {'model': ExtraTreesClassifier, 'n_estimators': [25, 50, 100], 'criterion': ['gini', 'entropy'],
 			'max_features': ['sqrt', 'log2'], 'max_depth': depth,
 			'bootstrap': [True, False], 'n_jobs':[cores]}
 #base classifier for adaboost is automatically a decision tree
-modelAB  = {'model': AdaBoostClassifier, 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators': n_estimMatrix}
-modelSVM = {'model': svm.SVC, 'C':[0.00001,0.0001,0.001,0.01,0.1,1,10], 'max_iter': [1000, 2000], 'probability': [True], 'kernel': ['rbf', 'poly', 'sigmoid', 'linear']}
+modelAB  = {'model': AdaBoostClassifier, 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators': [5, 10, 25, 50, 100, 200]}
+modelSVM = {'model': svm.SVC, 'C':[0.1,1], 'max_iter': [1000, 2000], 'probability': [True], 
+			'kernel': ['rbf', 'poly', 'sigmoid', 'linear']} #C was: [0.00001,0.0001,0.001,0.01,0.1,1,10]
 
 # will have to change n_estimators when running this on the project data
-modelGB  = {'model': GradientBoostingClassifier, 'learning_rate': [0.001,0.01,0.05,0.1,0.5], 'n_estimators': [1,10,50],#100], #200,1000,10000], these other numbers took way too long to calc
- 			'max_depth': [1,3,5,10,20,50,100], 'subsample' : [0.1, .2, 0.5, 1.0]}
+#modelGB  = {'model': GradientBoostingClassifier, 'learning_rate': [0.01,0.05,], 'n_estimators': [1,10,50],#100], #200,1000,10000], these other numbers took way too long to calc, learning rate had .1 and .5
+#			'max_depth': [5,10], 'subsample' : [0.1, .2]} #subsample included .5, 1, learning also had .001, 
 #Naive Bayes below
 modelNB  = {'model': GaussianNB}
-modelDT  = {'model': DecisionTreeClassifier, 'criterion': ['gini', 'entropy'], 'max_depth': [1,5,10,20,50,100], 
-			'max_features': ['sqrt','log2'],'min_samples_split': [2,5,10, 20, 50]}
+modelDT  = {'model': DecisionTreeClassifier, 'criterion': ['gini', 'entropy'], 'max_depth': [10,20,50], #had 100, 1, 5
+			'max_features': ['sqrt','log2'],'min_samples_split': [10, 20, 50]} #had a 2,5
 modelSGD = {'model': SGDClassifier, 'loss': ['modified_huber', 'perceptron'], 'penalty': ['l1', 'l2', 'elasticnet'], 
 			'n_jobs': [cores]}
 
 modelList = [modelLR, modelKNN, modelRF, modelET, 
-			 modelAB, modelSVM, modelGB, modelNB, modelDT,
-			 modelSGD]
+			 modelAB, modelSVM, modelNB, modelDT,
+			 modelSGD] #had modelGB
 
 ##################################################################################
 
@@ -170,12 +171,6 @@ def categToBin(df, cols):
 		dfN = pd.get_dummies(df[col])
 	df_n = pd.concat([df, dfN], axis=1)
 	return df_n
-
-'''
-Helper function to make histograms
-'''
-def makeHisty(ax, col, it, binny = 20):
-	n, bins, patches = ax.hist(col, binns=binny, histtype='bar', range=(min(col), max(col)))
 
 '''
 Make histogram plots, num is for layout of plot
@@ -439,13 +434,13 @@ def paralleled(item, X, y, k, modelType):
 		accs = [None]*k 
 		kf = cross_validation.KFold(len(y), k)
 		indx = 0
+		wrapped = wrapper(modelType, item)
 		for train, test in kf:
 			XTrain, XTest = X._slice(train, 0), X._slice(test, 0)
 			yTrain, yTest = y._slice(train, 0), y._slice(test, 0)
 			yTests[indx] = yTest
 
 			start = time()
-			wrapped = wrapper(modelType, item)
 			fitting = wrapped.fit(XTrain, yTrain)
 			t_time = time() - start
 			trainTimes[indx] = t_time
@@ -563,10 +558,10 @@ def formatData(masterHeader, d):
 		indxForm += 1
 	return format
 
-
 '''
 Write results of pipeline to file. Note, d is the 
-variable that is returned by the pipeLine function call 
+variable that is returned by the pipeLine function call
+Return:					0 for successful termination, -1 for error 
 '''
 def writeResultsToFile(fName, d):
 	header = makeHeader(d)
@@ -601,7 +596,7 @@ def pipeLine(name, lModels, yName, k, fillMethod = fillNaMean):
 		print "\nIter: " + str(indx) + "\n"
 		#own parallelization if sklearn does not already do that
 		if 'n_jobs' not in l and "<class 'sklearn.neighbors.classification.KNeighborsClassifier'>" not in l.values():
-			models = makeModelsPara(X, y, k, l)#makeModelsPara(X_train, X_test, y_train, y_test, l)
+			models = makeModelsPara(X, y, k, l)
 			res += models
 			#normalize data in case of KNN
 		elif "<class 'sklearn.neighbors.classification.KNeighborsClassifier'>" in l.values():
@@ -614,7 +609,7 @@ def pipeLine(name, lModels, yName, k, fillMethod = fillNaMean):
 
 		indx +=1
 
-	return res
+	return [z for z in res if z != None]
 
 '''
 Plot precision recall curve given model, true y, and
@@ -687,9 +682,22 @@ The results are in the same order as they are written
 to file.
 '''
 def getResultsInList(d):
- 	header = makeHeader(d)
-	fin = formatData(header, d)
+	global criteriaHeader
+	fin = formatData(criteriaHeader, d)
 	return fin
+
+'''
+Determine if list l contains a string.
+ex:		l = ['hello', 'good day']
+		containsString('hello', l) -> True
+		containsString('good', l)  -> True
+		containsString('bad', l)   -> False
+'''
+def containsString(string, l):
+	for x in l:
+		if string in x:
+			return True 
+	return False
 
 '''
 Get all results from function call getResultsInList
@@ -700,7 +708,7 @@ def getResultsByModel(results, modelName):
 	fin = []
 
 	for item in results:
-		if modelName in item:
+		if containsString(modelName, item):
 			fin.append(item)
 
 	return fin
@@ -725,7 +733,7 @@ fName:				Name of file to be written.
 def writeListToFile(header, data, fName):
 	assert(type(data) == list and type(header) == list)
 	try:
-		fin = data.copy() 
+		fin = data
 		fin.insert(0, header)
 		with open(fName, 'w') as fout:
 			writer = csv.writer(fout)
@@ -747,20 +755,21 @@ def writeNMetricsFilePerModel(data, n):
 	header = criteriaHeader
 	now = datetime.datetime.now() 
 	datey = str(now.month) + "." + str(now.day) + "." + str(now.year)
-	endPart = datey + '.csv'
+	endPart = '_' + datey + '.csv'
 
-	modelResults = [getResultsByModel(data, x) for x in modelnames]
+	modelResults = [getResultsByModel(data, x) for x in modelNames]
+	headLen = len(header)
 
-	for x in xrange(header):
+	for x in xrange(headLen):
 		metric = header[x]
 		tmp = []
 		if metric != 'Function called':
 			if '(sec)' in metric:
-				tmp = getBestNResultsAllModelsForSpecificMetric(data, header, n, x, True)
-				writeListToFile(header, tmp, x + endPart)
+				tmp = getBestNResultsAllModelsForSpecificMetric(data, modelResults, n, x, True)
+				writeListToFile(header, tmp, metric + endPart)
 			else:
-				tmp = getBestNResultsAllModelsForSpecificMetric(data, header, n, x, False)
-				writeListToFile(header, tmp, x + endPart)
+				tmp = getBestNResultsAllModelsForSpecificMetric(data, modelResults, n, x, False)
+				writeListToFile(header, tmp, metric + endPart)
 
 '''
 Gets best n results across all model types for a specific metric.
@@ -770,7 +779,12 @@ def getBestNResultsAllModelsForSpecificMetric(data, modelResults, n, indx, lowes
 	for z in modelResults:
 		res += getNResultsForMetric(z, indx, n, lowest)
 
+
 	final = mergeSort(res, indx)
+
+	if not lowest:
+		final.reverse()
+		return final 
 	return final
 
 '''
@@ -782,11 +796,13 @@ def getNResultsForMetric(results, indx, n, lowest = False):
 
 	resLen = len(sorted_res)
 
-	if n <= resLen:
+	items = min(n, resLen)
+
+	if resLen != 0:
 		if not lowest:
-			return sorted_res[resLen-n:]
+			return sorted_res[resLen-items:]
 		else:
-			return sorted_res[0:n]
+			return sorted_res[0:items]
 
 	return []
 
@@ -795,9 +811,12 @@ Gets the result value at index, indx, in the
 list generated by getCriterions.
 '''
 def getResultValue(l, indx):
-	s = l[indx]
-	parensIndx = s.index('(')
-	return float(s[0:parensIndx])
+	try:
+		s = l[indx]
+		parensIndx = s.index('(')
+		return float(s[0:parensIndx])
+	except:
+		raise Exception('Invalid format of passed list for mergeSort.\nL was: ' + str(l) + '. Index was: ' + str(indx))
 
 '''
 Performs mergesort on a list of results from getCriterions. Works in O(nlogn) time.
@@ -844,26 +863,4 @@ k = 5
 yName = 'SeriousDlqin2yrs'
 thingsToWrite = pipeLine(name, modelList, yName, k, fillNaMedian)
 writeResultsToFile('resultsTable.csv', thingsToWrite)
-fillMethod = fillNaMedian
-lModels = modelList
-'''
-
-'''
-data = readcsv('training.csv')
-print descrTable(data)
-data = fillNaMean(data)
-print corrTable(data)
-
-bModel, accs = pipeLine('training.csv', modelList, 'SeriousDlqin2yrs')
-
-
-
-dTest = readcsv('test.csv')
-dTest = fillNaMean(dTest)
-
-yTest, xTest = getXY(dTest, 'SeriousDlqin2yrs')
-
-preds = getPredicts(bModel, xTest)
-pDF = pd.DataFrame(preds)
-pDF.to_csv("predictions.csv")
 '''
