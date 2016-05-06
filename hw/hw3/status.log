@@ -1,0 +1,435 @@
+INFO:root:2/48
+INFO:root:3/48
+INFO:root:4/48
+INFO:root:5/48
+INFO:root:6/48
+INFO:root:7/48
+INFO:root:8/48
+INFO:root:9/48
+INFO:root:10/48
+INFO:root:11/48
+INFO:root:12/48
+INFO:root:13/48
+INFO:root:14/48
+INFO:root:15/48
+INFO:root:16/48
+INFO:root:17/48
+INFO:root:18/48
+INFO:root:19/48
+INFO:root:20/48
+INFO:root:21/48
+INFO:root:22/48
+INFO:root:23/48
+INFO:root:24/48
+INFO:root:25/48
+INFO:root:26/48
+INFO:root:27/48
+INFO:root:28/48
+INFO:root:29/48
+INFO:root:30/48
+INFO:root:31/48
+INFO:root:32/48
+INFO:root:33/48
+INFO:root:34/48
+INFO:root:35/48
+INFO:root:36/48
+INFO:root:37/48
+INFO:root:38/48
+INFO:root:39/48
+INFO:root:40/48
+INFO:root:41/48
+INFO:root:42/48
+INFO:root:43/48
+INFO:root:44/48
+INFO:root:45/48
+INFO:root:46/48
+INFO:root:47/48
+INFO:root:48/48
+INFO:root:
+Ended: <class 'sklearn.linear_model.logistic.LogisticRegression'>
+
+INFO:root:
+Starting: <class 'sklearn.neighbors.classification.KNeighborsClassifier'>
+
+INFO:root:1/12
+INFO:root:2/12
+INFO:root:3/12
+INFO:root:4/12
+INFO:root:5/12
+INFO:root:6/12
+INFO:root:7/12
+INFO:root:8/12
+INFO:root:9/12
+INFO:root:10/12
+INFO:root:11/12
+INFO:root:12/12
+INFO:root:
+Ended: <class 'sklearn.neighbors.classification.KNeighborsClassifier'>
+
+INFO:root:
+Starting: <class 'sklearn.ensemble.forest.RandomForestClassifier'>
+
+INFO:root:1/120
+INFO:root:2/120
+INFO:root:3/120
+INFO:root:4/120
+INFO:root:5/120
+INFO:root:6/120
+INFO:root:7/120
+INFO:root:8/120
+INFO:root:9/120
+INFO:root:10/120
+INFO:root:11/120
+INFO:root:12/120
+INFO:root:13/120
+INFO:root:14/120
+INFO:root:15/120
+INFO:root:16/120
+INFO:root:17/120
+INFO:root:18/120
+INFO:root:19/120
+INFO:root:20/120
+INFO:root:21/120
+INFO:root:22/120
+INFO:root:23/120
+INFO:root:24/120
+INFO:root:25/120
+INFO:root:26/120
+INFO:root:27/120
+INFO:root:28/120
+INFO:root:29/120
+INFO:root:30/120
+INFO:root:31/120
+INFO:root:32/120
+INFO:root:33/120
+INFO:root:34/120
+INFO:root:35/120
+INFO:root:36/120
+INFO:root:37/120
+INFO:root:38/120
+INFO:root:39/120
+INFO:root:40/120
+INFO:root:41/120
+INFO:root:42/120
+INFO:root:43/120
+INFO:root:44/120
+INFO:root:45/120
+INFO:root:46/120
+INFO:root:47/120
+INFO:root:48/120
+INFO:root:49/120
+INFO:root:50/120
+INFO:root:51/120
+INFO:root:52/120
+INFO:root:53/120
+INFO:root:54/120
+INFO:root:55/120
+INFO:root:56/120
+INFO:root:57/120
+INFO:root:58/120
+INFO:root:59/120
+INFO:root:60/120
+INFO:root:61/120
+INFO:root:62/120
+INFO:root:63/120
+INFO:root:64/120
+INFO:root:65/120
+INFO:root:66/120
+INFO:root:67/120
+INFO:root:68/120
+INFO:root:69/120
+INFO:root:70/120
+INFO:root:71/120
+INFO:root:72/120
+INFO:root:73/120
+INFO:root:74/120
+INFO:root:75/120
+INFO:root:76/120
+INFO:root:77/120
+INFO:root:78/120
+INFO:root:79/120
+INFO:root:80/120
+INFO:root:81/120
+INFO:root:82/120
+INFO:root:83/120
+INFO:root:84/120
+INFO:root:85/120
+INFO:root:86/120
+INFO:root:87/120
+INFO:root:88/120
+INFO:root:89/120
+INFO:root:90/120
+INFO:root:91/120
+INFO:root:92/120
+INFO:root:93/120
+INFO:root:94/120
+INFO:root:95/120
+INFO:root:96/120
+INFO:root:97/120
+INFO:root:98/120
+INFO:root:99/120
+INFO:root:100/120
+INFO:root:101/120
+INFO:root:102/120
+INFO:root:103/120
+INFO:root:104/120
+INFO:root:105/120
+INFO:root:106/120
+INFO:root:107/120
+INFO:root:108/120
+INFO:root:109/120
+INFO:root:110/120
+INFO:root:111/120
+INFO:root:112/120
+INFO:root:113/120
+INFO:root:114/120
+INFO:root:115/120
+INFO:root:116/120
+INFO:root:117/120
+INFO:root:118/120
+INFO:root:119/120
+INFO:root:120/120
+INFO:root:
+Ended: <class 'sklearn.ensemble.forest.RandomForestClassifier'>
+
+INFO:root:
+Starting: <class 'sklearn.ensemble.forest.ExtraTreesClassifier'>
+
+INFO:root:1/120
+INFO:root:2/120
+INFO:root:3/120
+INFO:root:4/120
+INFO:root:5/120
+INFO:root:6/120
+INFO:root:7/120
+INFO:root:8/120
+INFO:root:9/120
+INFO:root:10/120
+INFO:root:11/120
+INFO:root:12/120
+INFO:root:13/120
+INFO:root:14/120
+INFO:root:15/120
+INFO:root:16/120
+INFO:root:17/120
+INFO:root:18/120
+INFO:root:19/120
+INFO:root:20/120
+INFO:root:21/120
+INFO:root:22/120
+INFO:root:23/120
+INFO:root:24/120
+INFO:root:25/120
+INFO:root:26/120
+INFO:root:27/120
+INFO:root:28/120
+INFO:root:29/120
+INFO:root:30/120
+INFO:root:31/120
+INFO:root:32/120
+INFO:root:33/120
+INFO:root:34/120
+INFO:root:35/120
+INFO:root:36/120
+INFO:root:37/120
+INFO:root:38/120
+INFO:root:39/120
+INFO:root:40/120
+INFO:root:41/120
+INFO:root:42/120
+INFO:root:43/120
+INFO:root:44/120
+INFO:root:45/120
+INFO:root:46/120
+INFO:root:47/120
+INFO:root:48/120
+INFO:root:49/120
+INFO:root:50/120
+INFO:root:51/120
+INFO:root:52/120
+INFO:root:53/120
+INFO:root:54/120
+INFO:root:55/120
+INFO:root:56/120
+INFO:root:57/120
+INFO:root:58/120
+INFO:root:59/120
+INFO:root:60/120
+INFO:root:61/120
+INFO:root:62/120
+INFO:root:63/120
+INFO:root:64/120
+INFO:root:65/120
+INFO:root:66/120
+INFO:root:67/120
+INFO:root:68/120
+INFO:root:69/120
+INFO:root:70/120
+INFO:root:71/120
+INFO:root:72/120
+INFO:root:73/120
+INFO:root:74/120
+INFO:root:75/120
+INFO:root:76/120
+INFO:root:77/120
+INFO:root:78/120
+INFO:root:79/120
+INFO:root:80/120
+INFO:root:81/120
+INFO:root:82/120
+INFO:root:83/120
+INFO:root:84/120
+INFO:root:85/120
+INFO:root:86/120
+INFO:root:87/120
+INFO:root:88/120
+INFO:root:89/120
+INFO:root:90/120
+INFO:root:91/120
+INFO:root:92/120
+INFO:root:93/120
+INFO:root:94/120
+INFO:root:95/120
+INFO:root:96/120
+INFO:root:97/120
+INFO:root:98/120
+INFO:root:99/120
+INFO:root:100/120
+INFO:root:101/120
+INFO:root:102/120
+INFO:root:103/120
+INFO:root:104/120
+INFO:root:105/120
+INFO:root:106/120
+INFO:root:107/120
+INFO:root:108/120
+INFO:root:109/120
+INFO:root:110/120
+INFO:root:111/120
+INFO:root:112/120
+INFO:root:113/120
+INFO:root:114/120
+INFO:root:115/120
+INFO:root:116/120
+INFO:root:117/120
+INFO:root:118/120
+INFO:root:119/120
+INFO:root:120/120
+INFO:root:
+Ended: <class 'sklearn.ensemble.forest.ExtraTreesClassifier'>
+
+INFO:root:
+Started: <class 'sklearn.ensemble.weight_boosting.AdaBoostClassifier'>
+
+INFO:root:Started: {'n_estimators': 5, 'algorithm': 'SAMME'}
+INFO:root:Started: {'n_estimators': 5, 'algorithm': 'SAMME.R'}
+INFO:root:Started: {'n_estimators': 10, 'algorithm': 'SAMME'}
+INFO:root:Started: {'n_estimators': 10, 'algorithm': 'SAMME.R'}
+INFO:root:Started: {'n_estimators': 25, 'algorithm': 'SAMME'}
+INFO:root:Started: {'n_estimators': 25, 'algorithm': 'SAMME.R'}
+INFO:root:Started: {'n_estimators': 50, 'algorithm': 'SAMME'}
+INFO:root:Started: {'n_estimators': 50, 'algorithm': 'SAMME.R'}
+INFO:root:Started: {'n_estimators': 100, 'algorithm': 'SAMME'}
+INFO:root:Started: {'n_estimators': 100, 'algorithm': 'SAMME.R'}
+INFO:root:Started: {'n_estimators': 200, 'algorithm': 'SAMME'}
+INFO:root:Started: {'n_estimators': 200, 'algorithm': 'SAMME.R'}
+INFO:root:
+Ended: <class 'sklearn.ensemble.weight_boosting.AdaBoostClassifier'>
+
+INFO:root:
+Started: <class 'sklearn.svm.classes.SVC'>
+
+INFO:root:Started: {'kernel': 'rbf', 'C': 0.1, 'max_iter': 1000, 'probability': True}
+INFO:root:Started: {'kernel': 'rbf', 'C': 1, 'max_iter': 1000, 'probability': True}
+INFO:root:Started: {'kernel': 'rbf', 'C': 0.1, 'max_iter': 2000, 'probability': True}
+INFO:root:Started: {'kernel': 'rbf', 'C': 1, 'max_iter': 2000, 'probability': True}
+INFO:root:Started: {'kernel': 'poly', 'C': 0.1, 'max_iter': 1000, 'probability': True}
+INFO:root:Started: {'kernel': 'poly', 'C': 1, 'max_iter': 1000, 'probability': True}
+INFO:root:Started: {'kernel': 'poly', 'C': 0.1, 'max_iter': 2000, 'probability': True}
+INFO:root:Started: {'kernel': 'poly', 'C': 1, 'max_iter': 2000, 'probability': True}
+INFO:root:Started: {'kernel': 'sigmoid', 'C': 0.1, 'max_iter': 1000, 'probability': True}
+INFO:root:Started: {'kernel': 'sigmoid', 'C': 1, 'max_iter': 1000, 'probability': True}
+INFO:root:Started: {'kernel': 'sigmoid', 'C': 0.1, 'max_iter': 2000, 'probability': True}
+INFO:root:Started: {'kernel': 'sigmoid', 'C': 1, 'max_iter': 2000, 'probability': True}
+INFO:root:Started: {'kernel': 'linear', 'C': 0.1, 'max_iter': 1000, 'probability': True}
+INFO:root:Started: {'kernel': 'linear', 'C': 1, 'max_iter': 1000, 'probability': True}
+INFO:root:Started: {'kernel': 'linear', 'C': 0.1, 'max_iter': 2000, 'probability': True}
+INFO:root:Started: {'kernel': 'linear', 'C': 1, 'max_iter': 2000, 'probability': True}
+INFO:root:
+Ended: <class 'sklearn.svm.classes.SVC'>
+
+INFO:root:
+Started: <class 'sklearn.naive_bayes.GaussianNB'>
+
+INFO:root:Started: {}
+INFO:root:
+Ended: <class 'sklearn.naive_bayes.GaussianNB'>
+
+INFO:root:
+Started: <class 'sklearn.tree.tree.DecisionTreeClassifier'>
+
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 10, 'criterion': 'gini', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 10, 'criterion': 'gini', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 10, 'criterion': 'entropy', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 20, 'criterion': 'gini', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 20, 'criterion': 'gini', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 20, 'criterion': 'entropy', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 50, 'criterion': 'gini', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 10, 'criterion': 'gini', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 20, 'criterion': 'gini', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 50, 'criterion': 'gini', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 10, 'criterion': 'entropy', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 20, 'criterion': 'entropy', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 10, 'criterion': 'entropy', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 20, 'criterion': 'entropy', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 50, 'criterion': 'gini', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 50, 'criterion': 'entropy', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 10, 'criterion': 'gini', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 10, 'criterion': 'gini', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 10, 'criterion': 'entropy', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 20, 'criterion': 'gini', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 20, 'criterion': 'gini', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 10, 'criterion': 'gini', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 50, 'criterion': 'entropy', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'sqrt', 'min_samples_split': 50, 'criterion': 'entropy', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 10, 'criterion': 'entropy', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 10, 'criterion': 'entropy', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 20, 'criterion': 'gini', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 20, 'criterion': 'entropy', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 20, 'criterion': 'entropy', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 50, 'criterion': 'gini', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 50, 'criterion': 'gini', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 50, 'criterion': 'entropy', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 50, 'criterion': 'gini', 'max_depth': 20}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 20, 'criterion': 'entropy', 'max_depth': 50}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 50, 'criterion': 'entropy', 'max_depth': 10}
+INFO:root:Started: {'max_features': 'log2', 'min_samples_split': 50, 'criterion': 'entropy', 'max_depth': 50}
+INFO:root:
+Ended: <class 'sklearn.tree.tree.DecisionTreeClassifier'>
+
+INFO:root:
+Starting: <class 'sklearn.linear_model.stochastic_gradient.SGDClassifier'>
+
+INFO:root:1/6
+INFO:root:2/6
+INFO:root:3/6
+INFO:root:
+Ended: <class 'sklearn.linear_model.stochastic_gradient.SGDClassifier'>
+
+INFO:root:
+Starting: <class 'sklearn.naive_bayes.GaussianNB'>
+
+INFO:root:1/1
+INFO:root:
+Ended: <class 'sklearn.naive_bayes.GaussianNB'>
+
+INFO:root:
+Started: <class 'sklearn.ensemble.weight_boosting.AdaBoostClassifier'>
+
+INFO:root:Started: {'n_estimators': 5, 'algorithm': 'SAMME'}
+INFO:root:Started: {'n_estimators': 5, 'algorithm': 'SAMME.R'}
+INFO:root:Started: {'n_estimators': 10, 'algorithm': 'SAMME'}
+INFO:root:Started: {'n_estimators': 10, 'algorithm': 'SAMME.R'}
+INFO:root:
+Ended: <class 'sklearn.ensemble.weight_boosting.AdaBoostClassifier'>
+
