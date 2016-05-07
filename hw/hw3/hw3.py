@@ -45,8 +45,8 @@ criteriaHeader = ['AUC', 'Accuracy', 'Function called', 'Precision at .05',
 modelNames = ['LogisticRegression', 'KNeighborsClassifier', 'RandomForestClassifier', 'ExtraTreesClassifier',
 			  'AdaBoostClassifier', 'SVC', 'GradientBoostingClassifier', 'GaussianNB', 'DecisionTreeClassifier',
 			  'SGDClassifier']
-n_estimMatrix = [5, 10, 25, 50, 100, 200, 1000, 10000]
-depth = [1, 5, 10, 20, 50 100]
+n_estimMatrix = [5, 10, 25, 50, 100, 200]#, 1000, 10000]
+depth = [10, 20, 50]# 100]#1, 5, 100
 cpus = mp.cpu_count()
 cores = cpus-1
 modelLR = {'model': LogisticRegression, 'solver': ['liblinear'], 'C' : [.01, .1, .5, 1],#, 5, 10, 25],
@@ -65,7 +65,7 @@ modelET  = {'model': ExtraTreesClassifier, 'n_estimators': [25, 50, 100], 'crite
 			'max_features': ['sqrt', 'log2'], 'max_depth': depth,
 			'bootstrap': [True, False], 'n_jobs':[cores]}
 #base classifier for adaboost is automatically a decision tree
-modelAB  = {'model': AdaBoostClassifier, 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators': [5, 10, 25, 50, 100, 200]}
+modelAB  = {'model': AdaBoostClassifier, 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators': [5, 10, 25, 50, 100]}#, 200]}
 modelSVM = {'model': svm.SVC, 'C':[0.1,1], 'max_iter': [1000, 2000], 'probability': [True], 
 			'kernel': ['rbf', 'poly', 'sigmoid', 'linear']} #C was: [0.00001,0.0001,0.001,0.01,0.1,1,10]
 
@@ -175,7 +175,7 @@ def categToBin(df, cols):
 '''
 Make histogram plots, num is for layout of plot
 '''
-def histPlots(df, cols, numBins = 50):#items, fname, binns = 20, saveExt = ''):
+def histPlots(df, cols, numBins = 50):
 	for col in cols:
 		b = plt.hist(df[col], bins = numBins)
 		plt.title(col)
@@ -371,6 +371,19 @@ def makeResultString(mean, std):
 	return str(mean) + ' (' + str(std) + ')' 
 
 '''
+Turn prediction probabilities into 1s or 0s based
+on a threshold, thresh.
+'''
+def getPredsAtThresh(thresh, predProbs):
+	res = [None]*len(predProbs)
+	indx = 0
+	for z in predProbs:
+		res[indx] = np.asarray([1 if j >= thresh else 0 for j in z])
+		indx +=1
+
+	return res
+
+'''
 Return a dictionary of a bunch of criteria. Namely, this returns a dictionary
 with precision and recall at .05, .1, .2, .25, .5, .75, AUC, time to train, and
 time to test.
@@ -386,8 +399,9 @@ def getCriterions(yTests, predProbs, train_times, test_times, accuracies, called
 	res['Function called'] = called
 	for x in xrange(0, tots):
 		thresh = amts[x]
-		prec = [precision_at_k(yTests[j], predProbs[j], thresh)  for j in critsRange]
-		rec = [metrics.recall_score(yTests[j], predictionsAtThresh(yTests[j], predProbs[j], thresh)) for j in critsRange]
+		preds = getPredsAtThresh(thresh, predProbs)
+		prec = [metrics.precision_score(yTests[j], preds[j]) for j in critsRange]
+		rec = [metrics.recall_score(yTests[j], preds[j]) for j in critsRange]
 		precStd = np.std(prec)
 		recStd = np.std(rec)
 
@@ -641,22 +655,6 @@ def plot_precision_recall_n(y_true, y_prob, model_name):
     plt.title(name)
     #plt.savefig(name)
     plt.show()
-
-'''
-Get predictions at threshold
-'''
-def predictionsAtThresh(y_true, y_scores, k):
-	threshold = np.sort(y_scores)[::-1][int(k*len(y_scores))]
-	y_pred = np.asarray([1 if i >= threshold else 0 for i in y_scores])
-	return y_pred
-
-'''
-Precision at certain cutoff value 
-'''
-def precision_at_k(y_true, y_scores, k):
-    threshold = np.sort(y_scores)[::-1][int(k*len(y_scores))]
-    y_pred = np.asarray([1 if i >= threshold else 0 for i in y_scores])
-    return metrics.precision_score(y_true, y_pred)
 
 '''
 Creates same header as what is written to file.
