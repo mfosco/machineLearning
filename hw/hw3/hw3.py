@@ -861,4 +861,7 @@ k = 5
 yName = 'SeriousDlqin2yrs'
 thingsToWrite = pipeLine(name, modelList, yName, k, fillNaMedian)
 writeResultsToFile('resultsTable.csv', thingsToWrite)
+
+resList = getResultsInList(thingsToWrite)
+writeNMetricsFilePerModel(resList, 10)
 '''
