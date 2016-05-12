@@ -371,19 +371,6 @@ def makeResultString(mean, std):
 	return str(mean) + ' (' + str(std) + ')' 
 
 '''
-Turn prediction probabilities into 1s or 0s based
-on a threshold, thresh.
-'''
-def getPredsAtThresh(thresh, predProbs):
-	res = [None]*len(predProbs)
-	indx = 0
-	for z in predProbs:
-		res[indx] = np.asarray([1 if j >= thresh else 0 for j in z])
-		indx +=1
-
-	return res
-
-'''
 Return a dictionary of a bunch of criteria. Namely, this returns a dictionary
 with precision and recall at .05, .1, .2, .25, .5, .75, AUC, time to train, and
 time to test.
@@ -399,7 +386,7 @@ def getCriterions(yTests, predProbs, train_times, test_times, accuracies, called
 	res['Function called'] = called
 	for x in xrange(0, tots):
 		thresh = amts[x]
-		preds = getPredsAtThresh(thresh, predProbs)
+		preds = [np.asarray([1 if j >= thresh else 0 for j in z]) for z in predProbs]
 		prec = [metrics.precision_score(yTests[j], preds[j]) for j in critsRange]
 		rec = [metrics.recall_score(yTests[j], preds[j]) for j in critsRange]
 		precStd = np.std(prec)
@@ -604,7 +591,6 @@ def pipeLine(name, lModels, yName, k, fillMethod = fillNaMean):
 	res = []
 	indx = 1
 	logging.basicConfig(filename='status.log',level=logging.DEBUG)
-	#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 	for l in lModels:
 		print "\nIter: " + str(indx) + "\n"
